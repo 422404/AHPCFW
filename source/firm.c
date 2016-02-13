@@ -43,7 +43,7 @@ int ARM9_decrypt(void* FIRM){ //Address of FIRM (Keyslot 0x11 needs to be set pr
 */
 
 void patch(void){
-	u32* arm9bin = (void*)0x08006800;
+	/* ARM11 PATCHES */
 	u32* axiwram = (void*)0x1FF80000;
 	
 	u32 SVCAccessCheck[] = { 0x0AFFFFEA, 0xE320F000 };
@@ -71,13 +71,16 @@ void patch(void){
 		0xXXXX - Distance from branch instruction divided by 4 (2 needs to be subtracted as it always branches by at least 8 bytes)
 	*/
 	
-	u32 ARM11ThreadHook[] = { 0xF10C01C0, 0xE3A00000 }; //Disable Interrupts, MOV R0, #0
+	u32 ARM11ThreadHook[] = { 0xF10C01C0, 0xE3A00000 }; //Disable Interrupts; MOV R0, #0
 	for (int i = 0; i < 0x80000/4; i++){
 		if ((axiwram[i] == ARM11ThreadHook[0]) && (axiwram[i+2] == ARM11ThreadHook[1])){
-			axiwram[i] = 0xEBFF0000 | (((ARM11FreeSpace - (((i*4) + 0x1FF80000) - 0x40000))/4) - 2);
+			axiwram[i+2] = 0xEBFF0000 | (((ARM11FreeSpace - (((i*4) + 0x1FF80000) - 0x40000))/4) - 2);
 			break;
 		}
 	}
+	
+	/* ARM9 PATCHES */
+	u32* arm9bin = (void*)0x08006800;
 	
 	u32 SigCheck0[] = { 0x4D22B570, 0x47702000 };
 	for (int i = 0; i < 0xF9800/4; i++){
