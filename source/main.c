@@ -10,7 +10,7 @@ u8 AESKey2[0x10] = { 0x42, 0x3F, 0x81, 0x7A, 0x23, 0x52, 0x58, 0x31, 0x6E, 0x75,
 u8 keyXBuf[0x10] = { 0xDD, 0xDA, 0xA4, 0xC6, 0x2C, 0xC4, 0x50, 0xE9, 0xDA, 0xB6, 0x9B, 0x0D, 0x9D, 0x2A, 0x21, 0x98 };
 
 void _start(void){
-	color_code(0, 255, 0);
+	color_code(0, 255, 0); //G
 	
 	u8 keyX[0x10];
 	for (int i = 0; i < 0x10; i++) keyX[i] = key0[i] ^ key1[i];
@@ -25,7 +25,7 @@ void _start(void){
 		keyXBuf[0xF]++;
 	}
 	
-	color_code(0, 0, 255);
+	color_code(0, 0, 255); //B
 	
 	FATFS sdmc;
 	if (f_mount(&sdmc, "0:", 0) == FR_OK){
@@ -38,19 +38,7 @@ void _start(void){
 	}
 	f_mount(NULL, "0:", 0);
 	
-	color_code(255, 0, 0);
+	color_code(255, 0, 0); //R
 	
-	firmlaunch((u8*)0x24000000);
-	
-	/*
-	while(1)(
-		if (keypress("A")) emunand();
-		if (keypress("B")) sysnand();
-		if (keypress("X")) decrypt("NCCH");
-		if (keypress("Y")) decrypt("ARM9");
-		
-		if (keypress("START")) break;//exit();
-		if (keypress("SELECT")) break;
-	)
-	*/
+	firmlaunch((void*)0x24000000);
 }
