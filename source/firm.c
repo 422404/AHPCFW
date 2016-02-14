@@ -116,9 +116,9 @@ void patch(void){
 	u32 NANDRW[] = { 0x000D0004, 0x001E0017, 0x47204C00 };
 	for (int i = 0; i < 0xF9800/4; i++){
 		if ((arm9bin[i] == NANDRW[0]) && (arm9bin[i+1] == NANDRW[1]) && (arm9bin[i+0x10] == NANDRW[0])){
-			arm9bin[i] = NANDRW[3];
+			arm9bin[i] = NANDRW[2];
 			arm9bin[i+1] = ARM9FreeSpace;
-			arm9bin[i+0x10] = NANDRW[3];
+			arm9bin[i+0x10] = NANDRW[2];
 			arm9bin[i+0x11] = ARM9FreeSpace + 0xF0;
 			break;
 		}
@@ -141,9 +141,9 @@ void patch(void){
 }
 
 void firmlaunch(void* FIRM){
-	_memcpy((void*)(FIRM + 0x44), (void*)(FIRM + *((u32*)FIRM + 0x40)), *((u32*)FIRM + 0x48));
-	_memcpy((void*)(FIRM + 0x74), (void*)(FIRM + *((u32*)FIRM + 0x70)), *((u32*)FIRM + 0x48));
-	_memcpy((void*)(FIRM + 0xA4), (void*)(FIRM + *((u32*)FIRM + 0xA0)), *((u32*)FIRM + 0x48));
+	_memcpy((void*)(*((u32*)FIRM + 0x44)), (void*)(FIRM + *((u32*)FIRM + 0x40)), *((u32*)FIRM + 0x48));
+	_memcpy((void*)(*((u32*)FIRM + 0x74)), (void*)(FIRM + *((u32*)FIRM + 0x70)), *((u32*)FIRM + 0x78));
+	_memcpy((void*)(*((u32*)FIRM + 0xA4)), (void*)(FIRM + *((u32*)FIRM + 0xA0)), *((u32*)FIRM + 0xA8));
 	*((u32*)0x1FFFFFF8) = *((u32*)FIRM + 0x8);
 	((void (*)())0x801B01C)(); //((void (*)())*((u32*)FIRM + 0xC))();
 }

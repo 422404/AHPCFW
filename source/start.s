@@ -1,9 +1,9 @@
 .arm
 .section .text.start
 
-MRS R0, CPSR				@ Read the Status Register
-ORR R0, #0x80				@ Disable Interrupts
-MSR CPSR_c, R0				@ Set the Status Register
+MRS	R0, CPSR				@ Read the Status Register
+ORR	R0, #0x80				@ Disable Interrupts
+MSR	CPSR_c, R0				@ Set the Status Register
 
 MOV	R0, #0x78				@ Disable d/iCache and MPU
 MCR	P15, 0, R0, C1, C0, 0	@ Set Control Register

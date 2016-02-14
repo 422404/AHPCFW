@@ -26,32 +26,32 @@ void SET_AES_KEYCNT(u8 keyslot){
 }
 
 void SET_AES_CTR(u32 *ctr){
-	u32* AES_CTR = (u32*)0x10009020;
+	u32* AES_CTR = (void*)0x10009020;
 	for (int i = 0; i < 4; i++) AES_CTR[i] = ctr[i];
 }
 
 void SET_AES_MAC(u32 *mac){
-	u32* AES_MAC = (u32*)0x10009030;
+	u32* AES_MAC = (void*)0x10009030;
 	for (int i = 0; i < 4; i++) AES_MAC[i] = mac[i];
 }
 
 void SET_AES_KEY0(u8 keyslot, u32* key){
-	u32* AES_KEY0 = (u32*)0x10009040;
+	u32* AES_KEY0 = (void*)0x10009040;
 	for (int i = 0; i < 0xC; i++) AES_KEY0[i+(keyslot*0xC)] = key[i];
 }
 
 void SET_AES_KEY1(u8 keyslot, u32* key){
-	u32* AES_KEY1 = (u32*)0x10009070;
+	u32* AES_KEY1 = (void*)0x10009070;
 	for (int i = 0; i < 0xC; i++) AES_KEY1[i+(keyslot*0xC)] = key[i];
 }
 
 void SET_AES_KEY2(u8 keyslot, u32* key){
-	u32* AES_KEY2 = (u32*)0x100090A0;
+	u32* AES_KEY2 = (void*)0x100090A0;
 	for (int i = 0; i < 0xC; i++) AES_KEY2[i+(keyslot*0xC)] = key[i];
 }
 
 void SET_AES_KEY3(u8 keyslot, u32* key){
-	u32* AES_KEY3 = (u32*)0x100090D0;
+	u32* AES_KEY3 = (void*)0x100090D0;
 	for (int i = 0; i < 0xC; i++) AES_KEY3[i+(keyslot*0xC)] = key[i];
 }
 
