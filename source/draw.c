@@ -17,14 +17,3 @@ int bottom_screen(u8* bottom_buf){
 	
 	return 0;
 }
-
-void color_code(u8 r, u8 g, u8 b){
-	for (int i = 0; i < 0x46500; i += 3){
-		TOP_LEFT[i] = r;
-		TOP_LEFT[i+1] = g;
-		TOP_LEFT[i+2] = b;
-		TOP_RIGHT[i] = r;
-		TOP_RIGHT[i+1] = g;
-		TOP_RIGHT[i+2] = b;
-	}
-}

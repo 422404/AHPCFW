@@ -46,8 +46,10 @@ void aes(void* in, void* out, void* iv, u32 blocks, u32 method){
 	u32* input = in;
 	u32* output = out;
 	for (int j = 0; j < blocks*4; j+=4){
-		for (int i = 0; i < 4; i++) SET_AES_WRFIFO(input[j+i]);
-		for (int i = 0; i < 4; i++) GET_AES_RDFIFO(output[j+i]);
+		for (int i = 0; i < 4; i++){
+			SET_AES_WRFIFO(input[j+i]);
+			GET_AES_RDFIFO(output[j+i]);
+		}
 		if (iv != NULL){
 			add_ctr((u8*)iv);
 			SET_AES_CTR((u32*)iv);
