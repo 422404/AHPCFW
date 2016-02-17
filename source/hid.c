@@ -1,5 +1,5 @@
 #include "hid.h"
-#include "standard.h"
+#include "types.h"
 
 int keypress(char* key){
 	if (key[0] == 'A' || 'a') return *((u32*)0x10146000) & (1 << 0);
