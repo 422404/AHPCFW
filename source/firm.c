@@ -1,4 +1,5 @@
 #include "firm.h"
+#include "keydata.h"
 #include "aes.h"
 
 #include <string.h>
@@ -11,9 +12,9 @@ int ARM9_decrypt(void* FIRM){ //Address of FIRM (Keyslot 0x11 needs to be set pr
 	if(arm9bin[0] != 0xA7 || arm9bin[1] != 0x38 || arm9bin[2] != 0x5F || arm9bin[3] != 0x46) return 2; //if o3ds firm
 	
 	if(arm9bin[0x61] != 0xA9 && arm9bin[0x50] != 0xFF){ //if 9.6 firm
-		//set_normalKey(0x11, &AESKey2);
+		set_normalKey(0x11, &AESKey2);
 	} else {
-		//set_normalKey(0x11, &AESKey1);
+		set_normalKey(0x11, &AESKey1);
 	}
 	
 	int size = atoi(arm9bin + 0x30); //arm9bin encrypted data size
