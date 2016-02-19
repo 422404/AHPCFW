@@ -3,19 +3,18 @@
 #include "aes.h"
 
 #include <string.h>
+#include <stdlib.h>
 
 int ARM9_decrypt(void* FIRM){ //Address of FIRM (Keyslot 0x11 needs to be set properly ahead of time)
-	if(*((u8*)FIRM) != 'F' || *((u8*)FIRM + 1) != 'I' || *((u8*)FIRM + 2) != 'R' || *((u8*)FIRM + 3) != 'M') return 3; //if not firm
+	if(*((u32*)FIRM) != 0x4D524946) return 3; //if not firm
 	
 	u8* arm9bin = (void*)(FIRM + *((u32*)FIRM + 0xA0));
 	
-	if(arm9bin[0] != 0xA7 || arm9bin[1] != 0x38 || arm9bin[2] != 0x5F || arm9bin[3] != 0x46) return 2; //if o3ds firm
+	if(*((u32*)&arm9bin) != 0x465F38A7) return 2; //if o3ds firm
+	if(*((u32*)&arm9bin+0x800) != 0x47704770) return 1; //if decrypted
 	
-	if(arm9bin[0x61] != 0xA9 && arm9bin[0x50] != 0xFF){ //if 9.6 firm
-		set_normalKey(0x11, &AESKey2);
-	} else {
-		set_normalKey(0x11, &AESKey1);
-	}
+	if(arm9bin[0x61] != 0xA9 && arm9bin[0x50] != 0xFF) set_normalKey(0x11, &AESKey2); //if 9.6 firm
+	else set_normalKey(0x11, &AESKey1);
 	
 	int size = atoi(arm9bin + 0x30); //arm9bin encrypted data size
 	u8* ctr = arm9bin + 0x20;
@@ -43,6 +42,7 @@ void patch(void){
 	/* ARM11 PATCHES */
 	u32* arm11bin = (void*)FIRM[0x74/4];
 	
+	/* SVC Access Check */
 	for (u32 i = 0; i < (FIRM[0x78/4]/4); i++){
 		if (arm11bin[i] == 0x0AFFFFEA){
 			arm11bin[i] = 0xE320F000;
@@ -74,7 +74,7 @@ void patch(void){
 	/* ARM9 PATCHES */
 	u32* arm9bin = (void*)FIRM[0xA4/4];
 	
-	/* SigCheck Patch */
+	/* Signature Check */
 	for (u32 i = 0; i < (FIRM[0xA8/4]/4); i++){
 		if (arm9bin[i] == 0x4D22B570 && arm9bin[i+1] == 0x6869000C){
 			arm9bin[i] = 0x47702000;
