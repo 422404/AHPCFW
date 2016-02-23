@@ -30,9 +30,6 @@ extern "C" {
 
 //----My Options----
 
-#define _FS_READONLY 0
-#define _USE_LFN 1
-
 
 //------------------
 
@@ -291,14 +288,12 @@ int ff_del_syncobj (_SYNC_t sobj);              /* Delete a sync object */
 #define FA_READ             0x01
 #define FA_OPEN_EXISTING    0x00
 
-#if !_FS_READONLY
 #define FA_WRITE            0x02
 #define FA_CREATE_NEW       0x04
 #define FA_CREATE_ALWAYS    0x08
 #define FA_OPEN_ALWAYS      0x10
 #define FA__WRITTEN         0x20
 #define FA__DIRTY           0x40
-#endif
 
 
 /* FAT sub type (FATFS.fs_type) */

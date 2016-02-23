@@ -1,19 +1,20 @@
 #include "firm.h"
 #include "keydata.h"
 #include "aes.h"
+#include "fatfs/ff.h"
 
 #include <string.h>
 #include <stdlib.h>
 
 int ARM9_decrypt(void* FIRM){ //Address of FIRM (Keyslot 0x11 needs to be set properly ahead of time)
-	if(*((u32*)FIRM) != 0x4D524946) return 3; //if not firm
+	if (*((u32*)FIRM) != 0x4D524946) return 3; //if not firm
 	
 	u8* arm9bin = (void*)(FIRM + *((u32*)FIRM + 0xA0));
 	
-	if(*((u32*)&arm9bin) != 0x465F38A7) return 2; //if o3ds firm
-	if(*((u32*)&arm9bin+0x800) != 0x47704770) return 1; //if decrypted
+	if (*((u32*)&arm9bin) != 0x465F38A7) return 2; //if o3ds firm
+	if (*((u32*)&arm9bin+0x800) != 0x47704770) return 1; //if decrypted
 	
-	if(arm9bin[0x61] != 0xA9 && arm9bin[0x50] != 0xFF) set_normalKey(0x11, &AESKey2); //if 9.6 firm
+	if (arm9bin[0x61] != 0xA9 && arm9bin[0x50] != 0xFF) set_normalKey(0x11, &AESKey2); //if 9.6 firm
 	else set_normalKey(0x11, &AESKey1);
 	
 	int size = atoi(arm9bin + 0x30); //arm9bin encrypted data size
@@ -38,50 +39,55 @@ int ARM9_decrypt(void* FIRM){ //Address of FIRM (Keyslot 0x11 needs to be set pr
 
 void patch(void){
 	u32* FIRM = (void*)0x24000000;
+	u32 v = 0;
 	
 	/* ARM11 PATCHES */
-	u32* arm11bin = (void*)FIRM[0x74/4];
+	u32* arm11bin = (void*)0x24000000 + FIRM[0x70/4];
 	
 	/* SVC Access Check */
-	for (u32 i = 0; i < (FIRM[0x78/4]/4); i++){
-		if (arm11bin[i] == 0x0AFFFFEA){
-			arm11bin[i] = 0xE320F000;
-			arm11bin[i+2] = 0xE320F000;
-			break;
+	if (!(FIRM[1] & (1 << 0))){
+		for (u32 i = 0; i < (FIRM[0x78/4]/4); i++){
+			if (arm11bin[i] == 0x0AFFFFEA){
+				arm11bin[i] = 0xE320F000;
+				arm11bin[i+2] = 0xE320F000;
+				v |= (1 << 0);
+				break;
+			}
 		}
 	}
-	
-	/*u32 ARM11FreeSpace = 0;
-	for (u32 i = 0; i < (FIRM[0x78/4]/4); i++){
-		if (arm11bin[i] == 0x72656D69 && arm11bin[i+1] == 0){ //"KTimer" (Probably gotta relocate)
-			ARM11FreeSpace = FIRM[0x74/4] + (i*4) + 0x8;
-			break;
-		}
-	}
-	
-		Branch Instruction:
-		0xEB = BL
-		0xFF = branch_addr -= 0x40000
-		0xXXXX - Distance from branch instruction divided by 4 (2 needs to be subtracted as it always branches by at least 8 bytes)
-	
-	for (u32 i = 0; i < (FIRM[0x78/4]/4); i++){
-		if (arm11bin[i] == 0xF10C01C0 && arm11bin[i+2] == 0xE3A00000){ //CPSID AIF; MOV R0, #0 (Probably gotta relocate)
-			arm11bin[i+2] = 0xEBFF0000 | (((ARM11FreeSpace - (((i*4) + 0x1FF80000) - 0x40000))/4) - 2);
-			break;
-		}
-	}*/
 	
 	/* ARM9 PATCHES */
-	u32* arm9bin = (void*)FIRM[0xA4/4];
+	u32* arm9bin = (void*)0x24000000 + FIRM[0xA0/4];
+	
+	/* FIRM Partition Update (Credit to Delebile) */
+	if (!(FIRM[1] & (1 << 1))){
+		u8 FIRMUpdate[] = { 0x00, 0x28, 0x01, 0xDA, 0x04, 0x00 };
+		for (u32 i = 0; i < FIRM[0xA8/4]; i++){
+			if (memcmp((void*)(arm9bin+i), "exe:/%016llx/.firm", 0x12) == 0){
+				for (i -= 0x100; i < FIRM[0xA8/4]; i++){
+					if (memcmp((void*)(arm9bin+i), &FIRMUpdate, 6) == 0){
+						*((u16*)&arm9bin+i) = 0x2000;
+						*((u16*)&arm9bin+i+2) = 0x46C0;
+						v |= (1 << 1);
+						break;
+					}
+				}
+				break;
+			}
+		}
+	}
 	
 	/* Signature Check */
-	for (u32 i = 0; i < (FIRM[0xA8/4]/4); i++){
-		if (arm9bin[i] == 0x4D22B570 && arm9bin[i+1] == 0x6869000C){
-			arm9bin[i] = 0x47702000;
-		}
-		if (arm9bin[i] == 0xE7761CC0){
-			arm9bin[i] = 0xE7762000;
-			break;
+	if (!(FIRM[1] & (1 << 2))){
+		for (u32 i = 0; i < (FIRM[0xA8/4]/4); i++){
+			if (arm9bin[i] == 0x4D22B570 && arm9bin[i+1] == 0x6869000C){
+				arm9bin[i] = 0x47702000;
+			}
+			if (arm9bin[i] == 0xE7761CC0){
+				arm9bin[i] = 0xE7762000;
+				v |= (1 << 2);
+				break;
+			}
 		}
 	}
 	
@@ -95,6 +101,14 @@ void patch(void){
 					break;
 				}
 			}
+			break;
+		}
+	}
+	
+	u32 SDMMCStruct = 0;
+	for (u32 i = 0; i < (FIRM[0xA8/4]/4); i++){
+		if (arm9bin[i] == 0x30201820){
+			SDMMCStruct = arm9bin[i+2] + arm9bin[i+3]; //0x11F0
 			break;
 		}
 	}
@@ -121,14 +135,25 @@ void patch(void){
 			break;
 		}
 	}*/
+	
+	if (FIRM[1] != FIRM[1] | v){ //Still wondering if writing the patches back to the file is necessary
+		FIRM[1] |= v;
+		
+		FIL firm;
+		u32 * br;
+		if (f_open(&firm, "firm.bin", FA_WRITE | FA_OPEN_EXISTING) == FR_OK){
+			f_write(&firm, (void*)0x24000000, f_size(&firm), br);
+			f_close(&firm);
+		}
+	}
 }
 
 void firmlaunch(void){
 	u32* FIRM = (void*)0x24000000;
+	patch();
 	memcpy((void*)FIRM[0x44/4], (void*)(0x24000000 + FIRM[0x40/4]), FIRM[0x48/4]);
 	memcpy((void*)FIRM[0x74/4], (void*)(0x24000000 + FIRM[0x70/4]), FIRM[0x78/4]);
 	memcpy((void*)FIRM[0xA4/4], (void*)(0x24000000 + FIRM[0xA0/4]), FIRM[0xA8/4]);
-	patch();
 	*((u32*)0x1FFFFFF8) = FIRM[0x8/4];
 	((void (*)())0x801B01C)(); //((void (*)())FIRM[0xC/4])();
 }

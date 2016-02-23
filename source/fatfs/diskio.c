@@ -9,6 +9,7 @@
 
 #include "diskio.h"     /* FatFs lower layer API */
 #include "sdmmc.h"
+
 /* Definitions of physical drive number for each media */
 #define ATA     0
 #define MMC     1
