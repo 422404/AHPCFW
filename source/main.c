@@ -1,8 +1,11 @@
 #include "fatfs/ff.h"
 #include "keydata.h"
 #include "firm.h"
+#include "draw.h"
+#include "i2c.h"
 
 void _start(void){
+	screen_init();
 	keydata_init();
 	*((u32*)0x10000020) = 0x340; //Undocumented CONFIG Register, Allows SDMMC Access
 	
@@ -21,5 +24,6 @@ void _start(void){
 		f_mount(NULL, "0:", 0);
 	}
 	
+	i2cWriteRegister(I2C_DEV_MCU, 0x20, (u8)1);
 	while(1);
 }
