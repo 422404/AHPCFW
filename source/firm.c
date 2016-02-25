@@ -34,20 +34,16 @@ int ARM9_decrypt(void* FIRM){ //Address of FIRM (Keyslot 0x11 needs to be set pr
 
 void patch(void){
 	u32* FIRM = (void*)0x24000000;
-	u32 v = 0;
 	
 	/* ARM11 PATCHES */
 	u32* arm11bin = (void*)0x24000000 + FIRM[0x70/4];
 	
 	/* SVC Access Check */
-	if (!(FIRM[1] & (1 << 0))){
-		for (u32 i = 0; i < (FIRM[0x78/4]/4); i++){
-			if (arm11bin[i] == 0x0AFFFFEA){
-				arm11bin[i] = 0xE320F000;
-				arm11bin[i+2] = 0xE320F000;
-				v |= (1 << 0);
-				break;
-			}
+	for (u32 i = 0; i < (FIRM[0x78/4]/4); i++){
+		if (arm11bin[i] == 0x0AFFFFEA){
+			arm11bin[i] = 0xE320F000;
+			arm11bin[i+2] = 0xE320F000;
+			break;
 		}
 	}
 	
@@ -55,15 +51,14 @@ void patch(void){
 	u32* arm9bin = (void*)0x24000000 + FIRM[0xA0/4];
 	
 	/* FIRM Partition Update (Credit to Delebile) */
-	if (!(FIRM[1] & (1 << 1))){
+	if (!(*((u32*)0x101401C0) & 0x3)){ //Check for a9lh (Credit to AuroraWright)
 		u8 FIRMUpdate[] = { 0x00, 0x28, 0x01, 0xDA, 0x04, 0x00 };
-		for (u32 i = 0; i < FIRM[0xA8/4]; i++){
+		for (u32 i = 0; i < FIRM[0xA8/4]; i+=2){
 			if (memcmp((void*)(arm9bin+i), "exe:/%016llx/.firm", 0x12) == 0){
-				for (i -= 0x100; i < FIRM[0xA8/4]; i++){
+				for (i -= 0x100; i < FIRM[0xA8/4]; i+=2){
 					if (memcmp((void*)(arm9bin+i), &FIRMUpdate, 6) == 0){
 						*((u16*)&arm9bin+i) = 0x2000;
 						*((u16*)&arm9bin+i+2) = 0x46C0;
-						v |= (1 << 1);
 						break;
 					}
 				}
@@ -73,16 +68,13 @@ void patch(void){
 	}
 	
 	/* Signature Check */
-	if (!(FIRM[1] & (1 << 2))){
-		for (u32 i = 0; i < (FIRM[0xA8/4]/4); i++){
-			if (arm9bin[i] == 0x4D22B570 && arm9bin[i+1] == 0x6869000C){
-				arm9bin[i] = 0x47702000;
-			}
-			if (arm9bin[i] == 0xE7761CC0){
-				arm9bin[i] = 0xE7762000;
-				v |= (1 << 2);
-				break;
-			}
+	for (u32 i = 0; i < (FIRM[0xA8/4]/4); i++){
+		if (arm9bin[i] == 0x4D22B570 && arm9bin[i+1] == 0x6869000C){
+			arm9bin[i] = 0x47702000;
+		}
+		if (arm9bin[i] == 0xE7761CC0){
+			arm9bin[i] = 0xE7762000;
+			break;
 		}
 	}
 	
@@ -130,17 +122,6 @@ void patch(void){
 			break;
 		}
 	}*/
-	
-	if (FIRM[1] != FIRM[1] | v){ //Still wondering if writing the patches back to the file is necessary
-		FIRM[1] |= v;
-		
-		FIL firm;
-		u32 * br;
-		if (f_open(&firm, "firm.bin", FA_WRITE | FA_OPEN_EXISTING) == FR_OK){
-			f_write(&firm, (void*)0x24000000, f_size(&firm), br);
-			f_close(&firm);
-		}
-	}
 }
 
 void firmlaunch(void){

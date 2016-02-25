@@ -1,5 +1,4 @@
 #include "draw.h"
-#include "i2c.h"
 
 #include <string.h>
 
@@ -23,13 +22,14 @@ void screen_init(void){
 	*((vu32*)0x1FFFFFF8) = (u32)ARM11;
 }
 
-void screen_deinit(void){ //doesn't work, don't try it
+void screen_deinit(void){
 	void ARM11(void){
 		__asm(".word 0xF10C01C0");
 		
-		memset((void*)0x10400000, 0, 0x1000);
-		*((vu32*)0x10141200) = 0;
-		*((vu32*)0x10141204) = 0;
+		*((vu32*)0x10202A44) = 0;
+		*((vu32*)0x10202244) = 0;
+		*((vu32*)0x1020200C) = 0;
+		*((vu32*)0x10202014) = 0;
 		
 		*((vu32*)0x1FFFFFF8) = 0;
 		while(!*((vu32*)0x1FFFFFF8));

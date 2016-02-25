@@ -19,7 +19,7 @@ Normmatt - sdmmc and i2c libs.
 
 ChaN - FATFS lib.
 
-Delebile - FIRM Partition patch and being cool overall.
+Delebile - FIRM Partition patch.
 
 #A9LH Credits:
 Seeing as Delebile's code is much more appealing, I decided there'd be no reason to share my implementation. Despite this,
@@ -31,7 +31,7 @@ Laramie14 - Right hand man, helped with key bruteforcing and verified that O3DS 
 
 Plutoo and Yellows8 - Arm9loaderhax's discovery and explanation, including the useful infos given at 32c3.
 
-Normmatt - sdmmc libs, i2c libs 1.0.0 CN QR code, CN NAND dumper's load.bin
+Normmatt - sdmmc libs, i2c libs, 1.0.0 CN QR code, CN NAND dumper's load.bin
 
 ChaN - FATFS lib.
 
@@ -57,6 +57,8 @@ Julian20
 TuxSH
 
 Capito27
+
+AuroraWright
 
 MegaShaymin
 

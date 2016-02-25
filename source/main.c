@@ -18,6 +18,7 @@ void _start(void){
 			f_close(&firm);
 			
 			if (ARM9_decrypt((void*)0x24000000) != 3){
+				screen_deinit();
 				firmlaunch();
 			}
 		}
