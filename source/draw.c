@@ -9,7 +9,11 @@ void screen_init(void){
 			*((vu32*)0x10141200) = 0x1007F;
 			*((vu32*)0x10202014) = 1;
 			*((vu32*)0x1020200C) &= 0xFFFEFFFE;
+			
+			if (!*((vu32*)0x10202240)) *((vu32*)0x10202240) = 0x39;
 			*((vu32*)0x10202244) = 0x1023E;
+			
+			if (!*((vu32*)0x10202A40)) *((vu32*)0x10202240) = 0x39;
 			*((vu32*)0x10202A44) = 0x1023E;
 			
 			*((vu32*)0x10400400) = 0x000001c2;
@@ -72,12 +76,8 @@ void screen_init(void){
 			*((vu32*)0x10400494) = 0x18500000;
 			*((vu32*)0x10400498) = 0x18546500;
 			
-			i2cWriteRegister(3, 0x22, 0b101010);
-		} else { //if screen is already initialized, just clear and set the buffers
-			memset((void*)0x18300000, 0, 0x46500 + 0x38400);
-			memset((void*)0x18400000, 0, 0x46500 + 0x38400);
-			memset((void*)0x18500000, 0, 0x46500 + 0x46500);
-			
+			i2cWriteRegister(I2C_DEV_MCU, 0x22, 0b101010);
+		} else { //if screen is already initialized, set the buffers
 			*((vu32*)0x10400468) = 0x18300000;
 			*((vu32*)0x1040046c) = 0x18400000;
 			*((vu32*)0x10400478) = 0;
@@ -100,9 +100,8 @@ void screen_init(void){
 
 void screen_deinit(void){
 	void ARM11(void){
-		*((vu32*)0x10202A44) = 0;
 		*((vu32*)0x10202244) = 0;
-		*((vu32*)0x1020200C) = 0;
+		*((vu32*)0x10202A44) = 0;
 		*((vu32*)0x10202014) = 0;
 		
 		*((vu32*)0x1FFFFFF8) = 0;
@@ -114,15 +113,8 @@ void screen_deinit(void){
 	while(*((vu32*)0x1FFFFFF8));
 }
 
-void toggle_3d(void){ //untested
-	void ARM11(void){
-		*((vu32*)0x10400470) ^= (3 << 5);
-		
-		*((vu32*)0x1FFFFFF8) = 0;
-		while(!*((vu32*)0x1FFFFFF8));
-		((void (*)())*((vu32*)0x1FFFFFF8))();
-	}
-	
-	*((vu32*)0x1FFFFFF8) = (u32)ARM11;
-	while(*((vu32*)0x1FFFFFF8));
+void screen_clear(void){
+	memset((void*)0x18300000, 0, 0x46500 + 0x38400);
+	memset((void*)0x18400000, 0, 0x46500 + 0x38400);
+	memset((void*)0x18500000, 0, 0x46500 + 0x46500);
 }

@@ -13,23 +13,19 @@ void _start(void){
 	if (f_mount(&sdmc, "0:", 0) == FR_OK){
 		
 		if (HIDKeyStatus() & KEY_R){
-			screen_init();
-			u32 key;
-			u8 status;
+			screen_clear();
+			screen_init(); //Now some menu or something should go here, idk
 			while(1){
-				key = HIDKeyStatus();
-				status = i2cHIDStatus();
-				
-				if (status & i2c_Shut){
+				if (i2cHIDStatus() & i2c_Shut){ //There's not really a reason for this, I just think it's cool
 					screen_deinit();
 					while(!(i2cHIDStatus() & i2c_Open));
 					screen_init();
 				}
-				if (status & i2c_Power){
+				if (i2cHIDStatus() & i2c_Power){
 					i2cWriteRegister(I2C_DEV_MCU, 0x20, 1);
 					while(1);
 				}
-				if (status & i2c_Home) break;
+				if (i2cHIDStatus() & i2c_Home) break;
 			}
 		}
 		

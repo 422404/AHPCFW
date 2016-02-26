@@ -5,5 +5,6 @@
 
 void screen_init(void);
 void screen_deinit(void);
+void screen_clear(void);
 
 #endif
