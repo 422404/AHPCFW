@@ -21,6 +21,8 @@ ChaN - FATFS lib.
 
 Delebile - FIRM Partition patch.
 
+b1|1s, mid-kid, Normmatt, dark_samus, and everyone involved with screen init.
+
 #A9LH Credits:
 Seeing as Delebile's code is much more appealing, I decided there'd be no reason to share my implementation. Despite this,
 the people who have helped me deserve to be acknowledged.
