@@ -6,10 +6,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-int ARM9_decrypt(void* FIRM){ //Address of FIRM (Keyslot 0x11 needs to be set properly ahead of time)
-	if (*((u32*)FIRM) != 0x4D524946) return 3; //if not firm
+int ARM9_decrypt(u32* FIRM){ //Address of FIRM (Keyslot 0x11 needs to be set properly ahead of time)
+	if (FIRM[0] != 0x4D524946) return 3; //if not firm
 	
-	u8* arm9bin = (void*)(FIRM + *((u32*)FIRM + 0xA0));
+	u8* arm9bin = (void*)(FIRM + FIRM[0xA0/4]);
 	
 	if (*((u32*)&arm9bin) != 0x465F38A7) return 2; //if o3ds firm
 	if (*((u32*)&arm9bin+0x800) != 0x47704770) return 1; //if decrypted
@@ -32,11 +32,9 @@ int ARM9_decrypt(void* FIRM){ //Address of FIRM (Keyslot 0x11 needs to be set pr
 	return 0;
 }
 
-void patch(void){
-	u32* FIRM = (void*)0x24000000;
-	
+void patch(u32* FIRM){
 	/* ARM11 PATCHES */
-	u32* arm11bin = (void*)0x24000000 + FIRM[0x70/4];
+	u32* arm11bin = (void*)FIRM + FIRM[0x70/4];
 	
 	/* SVC Access Check */
 	for (u32 i = 0; i < (FIRM[0x78/4]/4); i++){
@@ -48,7 +46,7 @@ void patch(void){
 	}
 	
 	/* ARM9 PATCHES */
-	u32* arm9bin = (void*)0x24000000 + FIRM[0xA0/4];
+	u32* arm9bin = (void*)FIRM + FIRM[0xA0/4];
 	
 	/* FIRM Partition Update (Credit to Delebile) */
 	if (!(*((u32*)0x101401C0) & 0x3)){ //Check for a9lh (Credit to AuroraWright)
@@ -124,12 +122,11 @@ void patch(void){
 	}*/
 }
 
-void firmlaunch(void){
-	u32* FIRM = (void*)0x24000000;
-	patch();
-	memcpy((void*)FIRM[0x44/4], (void*)(0x24000000 + FIRM[0x40/4]), FIRM[0x48/4]);
-	memcpy((void*)FIRM[0x74/4], (void*)(0x24000000 + FIRM[0x70/4]), FIRM[0x78/4]);
-	memcpy((void*)FIRM[0xA4/4], (void*)(0x24000000 + FIRM[0xA0/4]), FIRM[0xA8/4]);
+void firmlaunch(u32* FIRM){
+	patch(FIRM);
+	memcpy((void*)FIRM[0x44/4], (void*)FIRM + FIRM[0x40/4], FIRM[0x48/4]);
+	memcpy((void*)FIRM[0x74/4], (void*)FIRM + FIRM[0x70/4], FIRM[0x78/4]);
+	memcpy((void*)FIRM[0xA4/4], (void*)FIRM + FIRM[0xA0/4], FIRM[0xA8/4]);
 	*((vu32*)0x1FFFFFF8) = FIRM[0x8/4];
 	((void (*)())0x801B01C)(); //((void (*)())FIRM[0xC/4])();
 }

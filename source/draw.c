@@ -6,6 +6,8 @@
 void screen_init(void){
 	void ARM11(void){
 		if (!*((vu32*)0x10202014)){ //Credit to b1|1s, mid-kid, Normmatt, dark_samus, and everyone else involved for screen init
+			i2cWriteRegister(I2C_DEV_MCU, 0x22, 0b101010);
+			
 			*((vu32*)0x10141200) = 0x1007F;
 			*((vu32*)0x10202014) = 1;
 			*((vu32*)0x1020200C) &= 0xFFFEFFFE;
@@ -75,8 +77,6 @@ void screen_init(void){
 			
 			*((vu32*)0x10400494) = 0x18500000;
 			*((vu32*)0x10400498) = 0x18546500;
-			
-			i2cWriteRegister(I2C_DEV_MCU, 0x22, 0b101010);
 		} else { //if screen is already initialized, set the buffers
 			*((vu32*)0x10400468) = 0x18300000;
 			*((vu32*)0x1040046c) = 0x18400000;
@@ -113,7 +113,7 @@ void screen_deinit(void){
 	while(*((vu32*)0x1FFFFFF8));
 }
 
-void screen_clear(void){
+void clear_framebuffers(void){
 	memset((void*)0x18300000, 0, 0x46500 + 0x38400);
 	memset((void*)0x18400000, 0, 0x46500 + 0x38400);
 	memset((void*)0x18500000, 0, 0x46500 + 0x46500);

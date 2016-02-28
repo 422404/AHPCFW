@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-int ARM9_decrypt(void* FIRM);
-void firmlaunch(void);
+int ARM9_decrypt(u32* FIRM);
+void firmlaunch(u32* FIRM);
 
 #endif

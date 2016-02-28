@@ -13,31 +13,62 @@ void _start(void){
 	if (f_mount(&sdmc, "0:", 0) == FR_OK){
 		
 		if (HIDKeyStatus() & KEY_R){
-			screen_clear();
+			clear_framebuffers();
+			
+			/*FIL img; //I got bored of nothing being on the screen during this loop :p
+			u32 * imgbr;
+			if (f_open(&img, "image.bin", FA_READ | FA_OPEN_EXISTING) == FR_OK){
+				f_read(&img, (void*)0x25000000, 0x46500, imgbr);
+				f_close(&img);
+				
+				memcpy((void*)0x18300000, (void*)0x25000000, 0x46500);
+				memcpy((void*)0x18400000, (void*)0x25000000, 0x46500);
+			}*/
 			screen_init(); //Now some menu or something should go here, idk
+			
+			u32 key;
+			u8 status;
 			while(1){
-				if (i2cHIDStatus() & i2c_Shut){ //There's not really a reason for this, I just think it's cool
+				key = HIDKeyStatus();
+				status = i2cHIDStatus();
+				
+				if (key & KEY_B) break;
+				
+				if (status & i2c_Shut){ //There's not really a reason for this, I just think it's cool
 					screen_deinit();
-					while(!(i2cHIDStatus() & i2c_Open));
+					while(!(status & i2c_Open)){
+						status = i2cHIDStatus();
+						
+						if (status & i2c_Power){
+							i2cWriteRegister(I2C_DEV_MCU, 0x20, 1); //Power Off
+							while(1);
+						}
+					}
 					screen_init();
 				}
-				if (i2cHIDStatus() & i2c_Power){
+				
+				if (status & i2c_Power){
 					i2cWriteRegister(I2C_DEV_MCU, 0x20, 1);
 					while(1);
 				}
-				if (i2cHIDStatus() & i2c_Home) break;
+				
+				if (status & i2c_Home){
+					i2cWriteRegister(I2C_DEV_MCU, 0x20, (1 << 2)); //Reboot
+					while(1);
+				}
 			}
 		}
 		
-		FIL firm;
+		FIL handle;
 		u32 * br;
-		if (f_open(&firm, "firm.bin", FA_READ | FA_OPEN_EXISTING) == FR_OK){
-			f_read(&firm, (void*)0x24000000, f_size(&firm), br);
-			f_close(&firm);
+		if (f_open(&handle, "firm.bin", FA_READ | FA_OPEN_EXISTING) == FR_OK){
+			u32 FIRM[f_size(&handle)/4];
+			f_read(&handle, FIRM, f_size(&handle), br);
+			f_close(&handle);
 			
-			if (ARM9_decrypt((void*)0x24000000) != 3){
+			if (ARM9_decrypt(FIRM) != 3){
 				screen_deinit();
-				firmlaunch();
+				firmlaunch(FIRM);
 			}
 		}
 		f_mount(NULL, "0:", 0);
