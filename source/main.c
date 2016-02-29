@@ -14,17 +14,16 @@ void _start(void){
 		
 		if (HIDKeyStatus() & KEY_R){
 			clear_framebuffers();
+			screen_init(); //Now some menu or something should go here, idk
 			
-			/*FIL img; //I got bored of nothing being on the screen during this loop :p
+			FIL img; //I got bored of nothing being on the screen during this loop :p
 			u32 * imgbr;
 			if (f_open(&img, "image.bin", FA_READ | FA_OPEN_EXISTING) == FR_OK){
 				f_read(&img, (void*)0x25000000, 0x46500, imgbr);
 				f_close(&img);
 				
-				memcpy((void*)0x18300000, (void*)0x25000000, 0x46500);
-				memcpy((void*)0x18400000, (void*)0x25000000, 0x46500);
-			}*/
-			screen_init(); //Now some menu or something should go here, idk
+				draw_top_screen((void*)0x25000000);
+			}
 			
 			u32 key;
 			u8 status;
@@ -62,14 +61,10 @@ void _start(void){
 		FIL handle;
 		u32 * br;
 		if (f_open(&handle, "firm.bin", FA_READ | FA_OPEN_EXISTING) == FR_OK){
-			u32 FIRM[f_size(&handle)/4];
-			f_read(&handle, FIRM, f_size(&handle), br);
+			f_read(&handle, (void*)0x24000000, f_size(&handle), br);
 			f_close(&handle);
 			
-			if (ARM9_decrypt(FIRM) != 3){
-				screen_deinit();
-				firmlaunch(FIRM);
-			}
+			if (ARM9_decrypt((u32*)0x24000000) != 3) firmlaunch((u32*)0x24000000);
 		}
 		f_mount(NULL, "0:", 0);
 	}

@@ -2,6 +2,7 @@
 #include "keydata.h"
 #include "aes.h"
 #include "fatfs/ff.h"
+#include "draw.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -124,6 +125,7 @@ void patch(u32* FIRM){
 
 void firmlaunch(u32* FIRM){
 	patch(FIRM);
+	screen_deinit();
 	memcpy((void*)FIRM[0x44/4], (void*)FIRM + FIRM[0x40/4], FIRM[0x48/4]);
 	memcpy((void*)FIRM[0x74/4], (void*)FIRM + FIRM[0x70/4], FIRM[0x78/4]);
 	memcpy((void*)FIRM[0xA4/4], (void*)FIRM + FIRM[0xA0/4], FIRM[0xA8/4]);

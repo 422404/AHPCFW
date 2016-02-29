@@ -70,23 +70,13 @@ void screen_init(void){
 			
 			*((vu32*)0x10400468) = 0x18300000;
 			*((vu32*)0x1040046c) = 0x18400000;
-			*((vu32*)0x10400478) = 0;
 			*((vu32*)0x10400568) = 0x18346500;
 			*((vu32*)0x1040056c) = 0x18446500;
-			*((vu32*)0x10400578) = 0;
-			
-			*((vu32*)0x10400494) = 0x18500000;
-			*((vu32*)0x10400498) = 0x18546500;
 		} else { //if screen is already initialized, set the buffers
 			*((vu32*)0x10400468) = 0x18300000;
 			*((vu32*)0x1040046c) = 0x18400000;
-			*((vu32*)0x10400478) = 0;
 			*((vu32*)0x10400568) = 0x18346500;
 			*((vu32*)0x1040056c) = 0x18446500;
-			*((vu32*)0x10400578) = 0;
-			
-			*((vu32*)0x10400494) = 0x18500000;
-			*((vu32*)0x10400498) = 0x18546500;
 		}
 		
 		*((vu32*)0x1FFFFFF8) = 0;
@@ -113,8 +103,73 @@ void screen_deinit(void){
 	while(*((vu32*)0x1FFFFFF8));
 }
 
+void flip_top_buffers(void){
+	void ARM11(void){
+		*((vu32*)0x10400478) ^= 1;
+		
+		*((vu32*)0x1FFFFFF8) = 0;
+		while(!*((vu32*)0x1FFFFFF8));
+		((void (*)())*((vu32*)0x1FFFFFF8))();
+	}
+	
+	*((vu32*)0x1FFFFFF8) = (u32)ARM11;
+	while(*((vu32*)0x1FFFFFF8));
+}
+
+void flip_bottom_buffers(void){
+	void ARM11(void){
+		*((vu32*)0x10400578) ^= 1;
+		
+		*((vu32*)0x1FFFFFF8) = 0;
+		while(!*((vu32*)0x1FFFFFF8));
+		((void (*)())*((vu32*)0x1FFFFFF8))();
+	}
+	
+	*((vu32*)0x1FFFFFF8) = (u32)ARM11;
+	while(*((vu32*)0x1FFFFFF8));
+}
+
+void draw_top_screen(void* src){
+	void ARM11(void){
+		*((vu32*)0x23EFFFFC) = *((vu32*)0x10400478);
+		
+		*((vu32*)0x1FFFFFF8) = 0;
+		while(!*((vu32*)0x1FFFFFF8));
+		((void (*)())*((vu32*)0x1FFFFFF8))();
+	}
+	
+	*((vu32*)0x1FFFFFF8) = (u32)ARM11;
+	while(*((vu32*)0x1FFFFFF8));
+	
+	if (*((vu32*)0x23EFFFFC) & 1){
+		memcpy((void*)0x18300000, src, 0x46500);
+	} else {
+		memcpy((void*)0x18400000, src, 0x46500);
+	}
+	flip_top_buffers();
+}
+
+void draw_bottom_screen(void* src){
+	void ARM11(void){
+		*((vu32*)0x23EFFFFC) = *((vu32*)0x10400578);
+		
+		*((vu32*)0x1FFFFFF8) = 0;
+		while(!*((vu32*)0x1FFFFFF8));
+		((void (*)())*((vu32*)0x1FFFFFF8))();
+	}
+	
+	*((vu32*)0x1FFFFFF8) = (u32)ARM11;
+	while(*((vu32*)0x1FFFFFF8));
+	
+	if (*((vu32*)0x23EFFFFC) & 1){
+		memcpy((void*)0x18346500, src, 0x38400);
+	} else {
+		memcpy((void*)0x18446500, src, 0x38400);
+	}
+	flip_bottom_buffers();
+}
+
 void clear_framebuffers(void){
 	memset((void*)0x18300000, 0, 0x46500 + 0x38400);
 	memset((void*)0x18400000, 0, 0x46500 + 0x38400);
-	memset((void*)0x18500000, 0, 0x46500 + 0x46500);
 }
