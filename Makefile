@@ -10,6 +10,6 @@ all:
 	mkdir -p temp
 	mv start.o temp/start.o
 	$(CC) -T 3ds.ld temp/start.o *.o 
-	$(OC) -O binary a.out ahpcfw.bin
+	$(OC) --set-section-flags .bss=alloc,load,contents -O binary a.out ahpcfw.bin
 	rm *.out *.o temp/start.o
 	rmdir temp

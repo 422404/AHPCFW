@@ -1,4 +1,9 @@
+// Copyright 2014 Normmatt
+// Licensed under GPLv2 or any later version
+// Refer to the license.txt file included.
+
 #include "../types.h"
+
 #include "sdmmc.h"
 #include "delay.h"
 
@@ -8,6 +13,37 @@
 
 static struct mmcdevice handleNAND;
 static struct mmcdevice handleSD;
+
+static inline u16 sdmmc_read16(u16 reg) {
+    return *(vu16*)(SDMMC_BASE + reg);
+}
+
+static inline void sdmmc_write16(u16 reg, u16 val) {
+    *(vu16*)(SDMMC_BASE + reg) = val;
+}
+
+static inline u32 sdmmc_read32(u16 reg) {
+    return *(vu32*)(SDMMC_BASE + reg);
+}
+
+static inline void sdmmc_write32(u16 reg, u32 val) {
+    *(vu32*)(SDMMC_BASE + reg) = val;
+}
+
+static inline void sdmmc_mask16(u16 reg, const u16 clear, const u16 set) {
+    u16 val = sdmmc_read16(reg);
+    val &= ~clear;
+    val |= set;
+    sdmmc_write16(reg, val);
+}
+
+static inline void setckl(u32 data)
+{
+    sdmmc_mask16(REG_SDCLKCTL, 0x100, 0);
+    sdmmc_mask16(REG_SDCLKCTL, 0x2FF, data & 0x2FF);
+    sdmmc_mask16(REG_SDCLKCTL, 0x0, 0x100);
+}
+
 
 mmcdevice *getMMCDevice(int drive)
 {
@@ -38,10 +74,10 @@ void __attribute__((noinline)) inittarget(struct mmcdevice *ctx)
 
 void __attribute__((noinline)) sdmmc_send_command(struct mmcdevice *ctx, u32 cmd, u32 args)
 {
-    int getSDRESP = (cmd << 15) >> 31;
+    bool getSDRESP = (cmd << 15) >> 31;
     u16 flags = (cmd << 15) >> 31;
-    const int readdata = cmd & 0x20000;
-    const int writedata = cmd & 0x40000;
+    const bool readdata = cmd & 0x20000;
+    const bool writedata = cmd & 0x40000;
 
     if (readdata || writedata)
         flags |= TMIO_STAT0_DATAEND;
@@ -68,13 +104,17 @@ void __attribute__((noinline)) sdmmc_send_command(struct mmcdevice *ctx, u32 cmd
 
     u32 size = ctx->size;
     u16 *dataPtr = (u16*)ctx->data;
+#ifdef DATA32_SUPPORT
     u32 *dataPtr32 = (u32*)ctx->data;
+#endif
 
-    int useBuf = ( NULL != dataPtr );
-    int useBuf32 = (useBuf && (0 == (3 & ((u32)dataPtr))));
+    bool useBuf = ( NULL != dataPtr );
+#ifdef DATA32_SUPPORT
+    bool useBuf32 = (useBuf && (0 == (3 & ((u32)dataPtr))));
+#endif
 
     u16 status0 = 0;
-    while(1) {
+    while(true) {
         u16 status1 = sdmmc_read16(REG_SDSTATUS1);
         if (status1 & TMIO_STAT1_RXRDY) {
             if (readdata && useBuf) {
@@ -221,32 +261,30 @@ int __attribute__((noinline)) sdmmc_nand_writesectors(u32 sector_no, u32 numsect
     return geterror(&handleNAND);
 }
 
-u32 calcSDSize(u8* csd, int type)
+static u32 calcSDSize(u8* csd, int type)
 {
     u32 result = 0;
-    u8 temp = csd[0xE];
-    //int temp3 = type;
-
+    if (type == -1) type = csd[14] >> 6;
     switch (type) {
-        case -1:
-            type = temp >> 6;
-            break;
         case 0:
-        {
-            u32 temp = (csd[0x7] << 0x2 | csd[0x8] << 0xA | csd[0x6] >> 0x6 | (csd[0x9] & 0xF) << 0x10) & 0xFFF;
-            u32 temp2 = temp * (1 << (csd[0x9] & 0xF));
-            u32 retval = temp2 * (1 << (((csd[0x4] >> 7 | csd[0x5] << 1) & 7) + 2));
-            result = retval >> 9;
+            {
+                u32 block_len = csd[9] & 0xf;
+                block_len = 1 << block_len;
+                u32 mult = (csd[4] >> 7) | ((csd[5] & 3) << 1);
+                mult = 1 << (mult + 2);
+                result = csd[8] & 3;
+                result = (result << 8) | csd[7];
+                result = (result << 2) | (csd[6] >> 6);
+                result = (result + 1) * mult * block_len / 512;
+            }
             break;
-        }
         case 1:
-            result = (((csd[0x7] & 0x3F) << 0x10 | csd[0x6] << 8 | csd[0x5]) + 1) << 0xA;
-            break;
-        default:
-            result = 0;
+            result = csd[7] & 0x3f;
+            result = (result << 8) | csd[6];
+            result = (result << 8) | csd[5];
+            result = (result + 1) * 1024;
             break;
     }
-
     return result;
 }
 
@@ -383,8 +421,14 @@ int Nand_Init()
 int SD_Init()
 {
     inittarget(&handleSD);
+
     //ioDelay(0x3E8);
-    ioDelay(0xF000);
+    //ioDelay(0xF000);
+    ioDelay(1u << 18);
+    
+    //If not inserted
+    if (!(*((vu16*)0x1000601c) & TMIO_STAT0_SIGSTATE)) return -1;
+    
     sdmmc_send_command(&handleSD,0,0);
     sdmmc_send_command(&handleSD,0x10408,0x1AA);
     //u32 temp = (handleSD.ret[0] == 0x1AA) << 0x1E;
@@ -448,9 +492,9 @@ int SD_Init()
     return 0;
 }
 
-void sdmmc_sdcard_init()
+int sdmmc_sdcard_init()
 {
     InitSD();
-    u32 nand_res = Nand_Init();
-    u32 sd_res = SD_Init();
+    Nand_Init();
+    return SD_Init();
 }
