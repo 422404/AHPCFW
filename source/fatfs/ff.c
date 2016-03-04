@@ -1411,7 +1411,6 @@ int cmp_lfn (           /* 1:Matched, 0:Not matched */
 
 
 
-static
 int pick_lfn (          /* 1:Succeeded, 0:Buffer overflow */
     WCHAR* lfnbuf,      /* Pointer to the Unicode-LFN buffer */
     BYTE* dir           /* Pointer to the directory entry */
@@ -2677,7 +2676,7 @@ FRESULT f_read (
 )
 {
     FRESULT res;
-    DWORD clst, sect, remain;
+    DWORD clst, sect = 0, remain;
     UINT rcnt, cc;
     BYTE csect, *rbuff = (BYTE*)buff;
 

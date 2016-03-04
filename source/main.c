@@ -17,7 +17,7 @@ void _start(void){
 		screen_init(); //Now some menu or something should go here, idk
 		
 		FIL img; //I got bored of nothing being on the screen during this loop :p
-		u32 * imgbr;
+		u32 * imgbr = 0;
 		if (f_open(&img, "image.bin", FA_READ | FA_OPEN_EXISTING) == FR_OK){
 			f_read(&img, (void*)0x18500000, 0x46500, imgbr);
 			f_close(&img);
@@ -59,15 +59,13 @@ void _start(void){
 	}
 	
 	FIL handle;
-	u32 * br;
+	u32 * br = 0;
 	if (f_open(&handle, "firm.bin", FA_READ | FA_OPEN_EXISTING) == FR_OK){
 		f_read(&handle, (void*)0x24000000, f_size(&handle), br);
 		f_close(&handle);
 		
 		if (ARM9_decrypt((u32*)0x24000000) != 3) firmlaunch((u32*)0x24000000);
 	}
-	
-	f_mount(NULL, "0:", 0);
 	
 	i2cWriteRegister(I2C_DEV_MCU, 0x20, 1);
 	while(1);

@@ -12,8 +12,8 @@ int ARM9_decrypt(u32* FIRM){ //Address of FIRM (Keyslot 0x11 needs to be set pro
 	
 	u8* arm9bin = (void*)(FIRM + FIRM[0xA0/4]);
 	
-	if (*((u32*)&arm9bin) != 0x465F38A7) return 2; //if o3ds firm
-	if (*((u32*)&arm9bin+0x800) != 0x47704770) return 1; //if decrypted
+	if (*((u32*)arm9bin) != 0x465F38A7) return 2; //if o3ds firm
+	if (*((u32*)arm9bin + 0x800) != 0x47704770) return 1; //if decrypted
 	
 	if (arm9bin[0x61] != 0xA9 && arm9bin[0x50] != 0xFF) set_normalKey(0x11, &AESKey2); //if 9.6^ firm
 	else set_normalKey(0x11, &AESKey1);
@@ -28,7 +28,7 @@ int ARM9_decrypt(u32* FIRM){ //Address of FIRM (Keyslot 0x11 needs to be set pro
 	set_keyY(keyslot, &arm9bin + 0x10); //keyY must be set last
 	
 	set_keyslot(keyslot);
-	aes(&arm9bin + 0x800, &arm9bin + 0x800, (u8*)(arm9bin+0x20), atoi(arm9bin+0x30)/16, AES_CTR_DECRYPT);
+	aes(&arm9bin + 0x800, &arm9bin + 0x800, (u8*)(arm9bin+0x20), atoi((const char *)(arm9bin+0x30))/16, AES_CTR_DECRYPT);
 	
 	return 0;
 }
