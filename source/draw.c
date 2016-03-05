@@ -69,6 +69,12 @@ void screen_init(void){
 			*((vu32*)0x10400568) = 0x18346500;
 			*((vu32*)0x1040056c) = 0x18446500;
 			
+			/* Backlight + LCD Init */
+			i2cWriteRegister(I2C_DEV_MCU, 0x22, 0x2A);
+			*((vu32*)0x10202014) = 1;
+			*((vu32*)0x10202244) = 0x1023E;
+			*((vu32*)0x10202A44) = 0x1023E;
+			
 			/* Reg. Writes */
 			*((vu32*)0x10202204) = 0;
 			*((vu32*)0x10202a04) = 0;
@@ -89,12 +95,6 @@ void screen_init(void){
 			
 			*((vu32*)0x10202240) = 0x39;
 			*((vu32*)0x10202A40) = 0x39;
-			
-			/* Backlight + LCD Init */
-			i2cWriteRegister(I2C_DEV_MCU, 0x22, 0x2A);
-			*((vu32*)0x10202014) = 1;
-			*((vu32*)0x10202244) = 0x1023E;
-			*((vu32*)0x10202A44) = 0x1023E;
 		} else { //if screen is already initialized, just set the buffers
 			*((vu32*)0x10400468) = 0x18300000;
 			*((vu32*)0x1040046c) = 0x18400000;
