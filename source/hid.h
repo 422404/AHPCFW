@@ -22,7 +22,7 @@
 #define i2c_Shut	(1 << 5)
 #define i2c_Open	(1 << 6)
 
-u32 HIDKeyStatus();
-u8 i2cHIDStatus();
+u32 HIDKeyStatus(void);
+u8 HIDI2CStatus(void);
 
 #endif

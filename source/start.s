@@ -2,10 +2,10 @@
 .section .text.start
 
 LDR R0, =0x101401C0         @ R0 = PDN_SPI_CNT;
-LDR R0, [R0]                @ R0 = *(u32*)R0;
+LDR R0, [R0]                @ R0 = *(u32 *)R0;
 AND R0, #3                  @ R0 = R0 & 3;
 CMP R0, #0                  @ if (!R0)
-BEQ _start                  @ _start();
+BLEQ _start                 @ _start();
 
 LDR SP, =0x27000000         @ Set the Stack Pointer
 

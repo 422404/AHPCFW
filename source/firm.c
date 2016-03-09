@@ -15,20 +15,20 @@ int ARM9_decrypt(u32* FIRM){ //Address of FIRM (Keyslot 0x11 needs to be set pro
 	if (*((u32*)arm9bin) != 0x465F38A7) return 2; //if o3ds firm
 	if (*((u32*)arm9bin + 0x800) != 0x47704770) return 1; //if decrypted
 	
-	if (arm9bin[0x61] != 0xA9 && arm9bin[0x50] != 0xFF) set_normalKey(0x11, &AESKey2); //if 9.6^ firm
-	else set_normalKey(0x11, &AESKey1);
+	if (arm9bin[0x61] != 0xA9 && arm9bin[0x50] != 0xFF) set_normalKey(0x11, AESKey2); //if 9.6^ firm
+	else set_normalKey(0x11, AESKey1);
 	
 	u8 keyslot = arm9bin[0x61] == 0xA9 ? 0x16 : 0x15; //keyslot changed on 9.5
 	u8* keyX = arm9bin + (arm9bin[0x61] == 0xA9 ? 0x60 : 0);
 	
 	set_keyslot(0x11);
-	aes(&keyX, &keyX, NULL, 1, AES_ECB_DECRYPT); //keyX is encrypted with aes ecb
+	aes(keyX, keyX, NULL, 1, AES_ECB_DECRYPT); //keyX is encrypted with aes ecb
 	
-	set_keyX(keyslot, &keyX);
-	set_keyY(keyslot, &arm9bin + 0x10); //keyY must be set last
+	set_keyX(keyslot, keyX);
+	set_keyY(keyslot, arm9bin + 0x10); //keyY must be set last
 	
 	set_keyslot(keyslot);
-	aes(&arm9bin + 0x800, &arm9bin + 0x800, (u8*)(arm9bin+0x20), atoi((const char *)(arm9bin+0x30))/16, AES_CTR_DECRYPT);
+	aes(arm9bin + 0x800, arm9bin + 0x800, (u8*)(arm9bin+0x20), atoi((const char *)(arm9bin+0x30))/16, AES_CTR_DECRYPT);
 	
 	return 0;
 }
@@ -36,8 +36,8 @@ int ARM9_decrypt(u32* FIRM){ //Address of FIRM (Keyslot 0x11 needs to be set pro
 void patch(u32* FIRM){
 	/* ARM11 PATCHES */
 	u32* arm11bin = (void*)FIRM + FIRM[0x70/4];
-	u32 arm11size = FIRM[0x78/4];
 	u32 process_size = FIRM[0x48/4];
+	u32 arm11size = FIRM[0x78/4];
 	
 	/* SVC Access Check */
 	for (u32 i = 0; i < (arm11size/4); i++){
@@ -74,7 +74,7 @@ void patch(u32* FIRM){
 	u32 arm9size = FIRM[0xA8/4];
 	
 	/* FIRM Partition Update (Credit to Delebile) */
-	if (!(*((u32*)0x101401C0) & 0x3)){ //Check for a9lh (Credit to AuroraWright)
+	if (!(*((vu32 *)0x101401C0) & 0x3)){ //Check for a9lh (Credit to AuroraWright)
 		u8 FIRMUpdate[] = { 0x00, 0x28, 0x01, 0xDA, 0x04, 0x00 };
 		for (u32 i = 0; i < arm9size; i+=2){
 			if (memcmp((void*)(arm9bin+i), "exe:/%016llx/.firm", 0x12) == 0){
@@ -153,6 +153,6 @@ void firmlaunch(u32* FIRM){
 	memcpy((void*)FIRM[0x44/4], (void*)FIRM + FIRM[0x40/4], FIRM[0x48/4]);
 	memcpy((void*)FIRM[0x74/4], (void*)FIRM + FIRM[0x70/4], FIRM[0x78/4]);
 	memcpy((void*)FIRM[0xA4/4], (void*)FIRM + FIRM[0xA0/4], FIRM[0xA8/4]);
-	*((vu32*)0x1FFFFFF8) = FIRM[0x8/4];
+	*((vu32 *)0x1FFFFFF8) = FIRM[0x8/4];
 	((void (*)())0x801B01C)(); //((void (*)())FIRM[0xC/4])();
 }

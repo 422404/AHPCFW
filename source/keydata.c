@@ -19,11 +19,11 @@ u8 keyXBuf[0x10];
 
 void keydata_init(void){
 	for (int i = 0; i < 0x10; i++) keyX[i] = keyX_0[i] ^ keyX_1[i];
-	set_keyX(0x25, &keyX);
+	set_keyX(0x25, keyX);
 	
 	for (int i = 0; i < 0x10; i++) AESKey1[i] = AESKey1_0[i] ^ AESKey1_1[i];
 	for (int i = 0; i < 0x10; i++) AESKey2[i] = AESKey2_0[i] ^ AESKey2_1[i];
-	set_normalKey(0x11, &AESKey2);
+	set_normalKey(0x11, AESKey2);
 	
 	for (int i = 0; i < 0x10; i++) keyXBuf[i] = keyXBuf_0[i] ^ keyXBuf_1[i];
 	
