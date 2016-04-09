@@ -11,18 +11,14 @@
 #define BotFrameBuf0  (u8*)0x18346500
 #define BotFrameBuf1  (u8*)0x18446500
 
-#define ARM11Pointer  *((vu32 *)0x23EFFFF8)
-#define FramebufSel   *((vu32 *)0x23EFFFFC)
-#define ARM11Entry    *((vu32 *)0x1FFFFFF8)
-
 void screen_init(void);
 void screen_deinit(void);
 void screen_reinit(void);
 
 void flip_top_buffers(void);
 void flip_bottom_buffers(void);
-void draw_top_screen(void);
-void draw_bottom_screen(void);
+void update_top_screen(void);
+void update_bottom_screen(void);
 
 void clear_framebuffers(void);
 

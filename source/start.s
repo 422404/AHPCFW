@@ -1,13 +1,17 @@
 .arm
 .section .text.start
 
-LDR R0, =0x101401C0         @ R0 = PDN_SPI_CNT;
-LDR R0, [R0]                @ R0 = *(u32 *)R0;
-AND R0, #3                  @ R0 = R0 & 3;
-CMP R0, #0                  @ if (!R0)
-BLEQ _start                 @ _start();
+MRS R0, CPSR                @ Read the Status Register
+ORR R0, #0x80               @ Disable Interrupts
+MSR CPSR_c, R0              @ Set the Status Register
 
 LDR SP, =0x27000000         @ Set the Stack Pointer
+
+MRC P15, 0, R0, C1, C0, 0   @ Read the Control Register
+BIC R0, #0x1000             @ Disable iCache
+BIC R0, #4                  @ Disable dCache
+BIC R0, #1                  @ Disable MPU
+MCR P15, 0, R0, C1, C0, 0   @ Set the Control Register
 
 LDR R0, =0xFFFF001D         @ Unprotected Bootrom | 32KB
 MCR P15, 0, R0, C6, C0, 0   @ Set MPU Region 0
@@ -46,4 +50,5 @@ ORR R0, #4                  @ Enable dCache
 ORR R0, #1                  @ Enable MPU
 MCR P15, 0, R0, C1, C0, 0   @ Set the Control Register
 
+BL ARM11Start               @ ARM11Start(); //Setup ARM11
 BL _start                   @ _start();
