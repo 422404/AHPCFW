@@ -1,4 +1,3 @@
-#include "fatfs/sdmmc.h"
 #include "arm11.h"
 
 #include <string.h>
