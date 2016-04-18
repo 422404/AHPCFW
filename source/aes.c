@@ -50,7 +50,7 @@ void aes(void* in, void* out, void* iv, u32 blocks, u32 method){
 		
 		for (int j = 0; j < 0x10; j+=4) AES_WRFIFO = *((u32*)(in+i+j));
 		while(((AES_CNT >> 0x5) & 0x1F) < 0x4); //wait for every word to get processed
-		for (int j = 0; j < 0x10; j+=4) *((u32*)(in+i+j)) = AES_RDFIFO;
+		for (int j = 0; j < 0x10; j+=4) *((u32*)(out+i+j)) = AES_RDFIFO;
 		
 		AES_CNT &= ~0x80000000;
 		

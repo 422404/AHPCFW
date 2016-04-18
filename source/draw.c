@@ -108,13 +108,6 @@ void screen_deinit(void){
 	*((vu32 *)0x10202014) = 0;
 }
 
-void screen_reinit(void){
-	i2cWriteRegister(I2C_DEV_MCU, 0x22, 0x2A);
-	*((vu32 *)0x10202014) = 1;
-	*((vu32 *)0x10202244) = 0x1023E;
-	*((vu32 *)0x10202A44) = 0x1023E;
-}
-
 void flip_top_buffers(void){
 	*((vu32 *)0x10400478) ^= 1;
 }

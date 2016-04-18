@@ -52,3 +52,4 @@ MCR P15, 0, R0, C1, C0, 0   @ Set the Control Register
 
 BL ARM11Start               @ ARM11Start(); //Setup ARM11
 BL _start                   @ _start();
+B .                         @ Infinite Loop

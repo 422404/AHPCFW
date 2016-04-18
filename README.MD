@@ -1,27 +1,33 @@
 #Overview:
-This is as basic as I could get a 'CFW' to be. Currently, it loads firm.bin from the SD Card, patches it, and launches it.
+This is my take on a 'CFW'. Currently, it loads firm.bin from the SD Card, patches it, and launches it.
 There are also screen functions as well as other libs the user can play with. I plan to add in more patches and uses.
 
-At the current point in time, it patches the follwing:
+At the current point in time, here's what it patches:
 
--SVC Access Checks (Untested)
+-SVC Access Checks
 
--FIRM Partition Writing (Credit to Delebile, Untested)
+-FIRM Partition Writing (Credit to Delebile)
 
 -Signature Checks
 
-And there's also some unfinished, but probably easily usable Emu/RedNAND patches.
+-FIRM Header Address
+
+It can also load external code into a thread (It checks for 'thread.bin' on the sd card) and launch into Red/EmuNAND.
+
+There is also some (WIP) code to load 'arm11.cxi' along with the other cxis in native firm. This hasn't been successfully tested yet...
 
 #Credits:
 Laramie14 - Right hand man.
 
-Normmatt - sdmmc and i2c libs.
+Normmatt - sdmmc, i2c libs, and Red/EmuNAND code.
 
 ChaN - FATFS lib.
 
 Delebile - FIRM Partition patch.
 
 b1|1s, mid-kid, Normmatt, dark_samus, and everyone involved with screen init.
+
+3DBrew and it's members - Keeping 3DBrew so full of information.
 
 #A9LH Credits:
 Seeing as Delebile's code is much more appealing, I decided there'd be no reason to share my implementation. Despite this,
@@ -33,7 +39,7 @@ Laramie14 - Right hand man, helped with key bruteforcing and verified that O3DS 
 
 Plutoo and Yellows8 - Arm9loaderhax's discovery and explanation, including the useful infos given at 32c3.
 
-Normmatt - sdmmc libs, i2c libs, 1.0.0 CN QR code, CN NAND dumper's load.bin
+Normmatt - sdmmc libs, i2c libs, 1.0.0 CN QR code, and CN NAND dumper's 'load.bin'.
 
 ChaN - FATFS lib.
 

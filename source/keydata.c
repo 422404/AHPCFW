@@ -1,5 +1,6 @@
 #include "aes.h"
 #include "types.h"
+#include "fatfs/ff.h"
 
 u8 keyX[0x10] = { /*Insert 0x25 keyx here*/ };
 
@@ -12,14 +13,14 @@ u8 keyY1[0x10] = { 0xB9, 0xC0, 0xE0, 0x45, 0xEC, 0x96, 0x88, 0x2B, 0xD0, 0xA4, 0
 u8 outbuf[0x10];
 
 int keydata_init(u8 keyslot, u8 sector_key, u32* FIRM){
-	u32* arm9bin = FIRM != NULL ? FIRM + FIRM[0xA0/4] : (void*)0x8006800;
+	u32* arm9bin = FIRM != NULL ? (void*)FIRM + FIRM[0xA0/4] : (void*)0x8006800;
 	u32 arm9size = FIRM != NULL ? FIRM[0xA8/4] : 0x90000;
 	
 	switch (keyslot){
 		case 0x05:
 			for (u32 i = 0; i < (arm9size/4); i++){
 				if (arm9bin[i] == 0x4E4F804D){
-					set_keyY(0x05, arm9bin+(i*4));
+					set_keyY(0x05, (void*)arm9bin+(i*4));
 					return 0;
 				}
 			}
@@ -45,7 +46,8 @@ int keydata_init(u8 keyslot, u8 sector_key, u32* FIRM){
 			set_keyslot(0x11);
 			for (u32 i = 0; i < (arm9size/4); i++){
 				if (arm9bin[i] == 0xF1E48DA4){
-					aes(arm9bin+(i*4), outbuf, NULL, 1, AES_ECB_DECRYPT);
+					u8* keybuf = (void*)arm9bin + (i*4);
+					aes(keybuf, outbuf, NULL, 1, AES_ECB_DECRYPT);
 					set_keyX(0x18, outbuf);
 					return 0;
 				}
@@ -57,11 +59,13 @@ int keydata_init(u8 keyslot, u8 sector_key, u32* FIRM){
 			set_keyslot(0x11);
 			for (u32 i = 0; i < (arm9size/4); i++){
 				if (arm9bin[i] == 0xC6A4DADD){
-					for (int i = 0x19; i < 0x20; i++){
-						aes(arm9bin+(i*4), outbuf, NULL, 1, AES_ECB_DECRYPT);
-						set_keyX(i, outbuf);
-						*((u8 *)arm9bin+(i*4)+0xF) += 1;
+					u8* keybuf = (void*)arm9bin + (i*4);
+					for (u8 ii = 0x19; ii < 0x20; ii++){
+						aes(keybuf, outbuf, NULL, 1, AES_ECB_DECRYPT);
+						set_keyX(ii, outbuf);
+						keybuf[0xF]++;
 					}
+					keybuf[0xF] -= 6;
 					return 0;
 				}
 			}

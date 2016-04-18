@@ -18,31 +18,16 @@ void MCU_Reboot(void){
 	while(1);
 }
 
-void main_loop(void){
+void main_loop(void){ //This is currently just here in case an accidental launch or something, I use it to verify the code launched
 	screen_init(); //Now some menu or something should go here, idk
 	
 	update_top_screen();
 	update_bottom_screen();
 	
-	u32 key;
-	u8 i2c;
 	while(1){
-		key = HIDKeyStatus();
-		i2c = HIDI2CStatus();
-		
-		if (key & KEY_B) break;
-		
-		if (i2c & i2c_Shut){ //There isn't really a reason for this, I just think it's cool
-			screen_deinit();
-			while(!(i2c & i2c_Open)){
-				i2c = HIDI2CStatus();
-				if (i2c & i2c_Power) MCU_ShutDown();
-			}
-			screen_reinit();
-		}
-		
-		if (i2c & i2c_Power) MCU_ShutDown();
-		if (i2c & i2c_Home) MCU_Reboot();
+		if (HIDKeyStatus() & KEY_B) break;
+		if (HIDI2CStatus() & i2c_Power) MCU_ShutDown();
+		if (HIDI2CStatus() & i2c_Home) MCU_Reboot();
 	}
 }
 
@@ -56,7 +41,7 @@ void _start(void){
 	if (HIDKeyStatus() & KEY_R){
 		clear_framebuffers();
 		
-		FIL img; //I got bored of nothing being on the screen during this loop :p
+		FIL img; //I got bored of nothing being on the screen during the main loop :p
 		u32 * ibr = 0;
 		if (f_open(&img, "image.bin", FA_READ | FA_OPEN_EXISTING) == FR_OK){
 			f_read(&img, TopDrawBuffer, 0x46500, ibr);
@@ -77,5 +62,5 @@ void _start(void){
 		firmlaunch(FIRM);
 	}
 	
-	MCU_ShutDown();
+	MCU_ShutDown(); //Don't return!
 }
