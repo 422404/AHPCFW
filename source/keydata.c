@@ -1,6 +1,5 @@
 #include "aes.h"
 #include "types.h"
-#include "fatfs/ff.h"
 
 u8 keyX[0x10] = { /*Insert 0x25 keyx here*/ };
 
@@ -46,8 +45,7 @@ int keydata_init(u8 keyslot, u8 sector_key, u32* FIRM){
 			set_keyslot(0x11);
 			for (u32 i = 0; i < (arm9size/4); i++){
 				if (arm9bin[i] == 0xF1E48DA4){
-					u8* keybuf = (void*)arm9bin + (i*4);
-					aes(keybuf, outbuf, NULL, 1, AES_ECB_DECRYPT);
+					aes((void*)arm9bin+(i*4), outbuf, NULL, 1, AES_ECB_DECRYPT);
 					set_keyX(0x18, outbuf);
 					return 0;
 				}

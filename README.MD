@@ -2,7 +2,7 @@
 This is my take on a 'CFW'. Currently, it loads firm.bin from the SD Card, patches it, and launches it.
 There are also screen functions as well as other libs the user can play with. I plan to add in more patches and uses.
 
-At the current point in time, here's what it patches:
+At the current point in time, this is what it patches:
 
 -SVC Access Checks
 
@@ -12,9 +12,13 @@ At the current point in time, here's what it patches:
 
 -FIRM Header Address
 
-It can also load external code into a thread (It checks for 'thread.bin' on the sd card) and launch into Red/EmuNAND.
+There is also support for Red/EmuNAND.
 
-There is also some (WIP) code to load 'arm11.cxi' along with the other cxis in native firm. This hasn't been successfully tested yet...
+WIP Patches:
+
+-ARM11 Co-Process (might get scrapped)
+
+-ARM9 Thread (might get scrapped)
 
 #Credits:
 Laramie14 - Right hand man.
