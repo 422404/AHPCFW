@@ -107,7 +107,7 @@ int REDNAND(void){
 
 void patch(u32* FIRM){
 	/* ARM11 PATCHES */
-	u32* arm11bin = (void*)FIRM[0x74/4];
+	vu32* arm11bin = (void*)FIRM[0x74/4];
 	u32 arm11size = FIRM[0x78/4];
 	
 	/* SVC Access Check */
@@ -142,7 +142,7 @@ void patch(u32* FIRM){
 	}
 	
 	/* ARM9 PATCHES */
-	u32* arm9bin = (void*)FIRM[0xA4/4];
+	vu32* arm9bin = (void*)FIRM[0xA4/4];
 	u32 arm9size = FIRM[0xA8/4];
 	
 	/* FIRM Partition Update (Credit to Delebile) */
@@ -152,8 +152,8 @@ void patch(u32* FIRM){
 			if (memcmp((void*)(arm9bin+i), "exe:/%016llx/.firm", 0x12) == 0){
 				for (i -= 0x100; i < FIRM[0xA8/4]; i+=2){
 					if (memcmp((void*)(arm9bin+i), &FIRMUpdate, 6) == 0){
-						*((u16 *)(void*)(arm9bin+i)) = 0x2000;
-						*((u16 *)(void*)(arm9bin+i+2)) = 0x46C0;
+						*((vu16 *)(void*)(arm9bin+i)) = 0x2000;
+						*((vu16 *)(void*)(arm9bin+i+2)) = 0x46C0;
 						break;
 					}
 				}
@@ -226,7 +226,7 @@ void patch(u32* FIRM){
 		f_close(&thread);
 	}
 	
-	/* Debugging
+	/* Debugging 
 	FIL itcm;
 	u32 * itcm_br = 0;
 	f_open(&itcm, "itcm.bin", FA_WRITE | FA_CREATE_ALWAYS);
