@@ -45,6 +45,7 @@ int firm_setup(u32* FIRM){
 bool REDNAND(u32 offset, u32 ncsd_offset){
 	u8 buff[0x200];
 	
+	sdmmc_sdcard_readsectors(1, 1, buff); //"rednand"
 	if (strncmp((char *)(buff+0x100), "NCSD", 4) == 0){
 		offset = 1;
 		ncsd_offset = 1;
@@ -52,6 +53,7 @@ bool REDNAND(u32 offset, u32 ncsd_offset){
 	}
 	
 	mmcdevice nand = *getMMCDevice(0);
+	sdmmc_sdcard_readsectors(nand.total_size, 1, buff); //"emunand"
 	if (strncmp((char *)(buff+0x100), "NCSD", 4) == 0){
 		offset = 1;
 		ncsd_offset = nand.total_size;
@@ -171,6 +173,7 @@ void patch(u32* FIRM){
 	
 	u32 offset = 0;
 	u32 ncsd = 0;
+	if (REDNAND(offset, ncsd) && !(HIDKeyStatus() & KEY_L)){
 		for (u32 i = 0; i < (arm9size/4); i++){
 			if (arm9bin[i] == 0x30201820){
 				emunand_code[21] = arm9bin[i+2] + arm9bin[i+3]; //sdmc struct
