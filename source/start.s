@@ -34,14 +34,14 @@ LDR R0, =0x33333333         @ R/W Flags (0b011 = R/W for Kern/User)
 MCR P15, 0, R0, C5, C0, 2   @ Set MPU Region Data Privs
 MCR P15, 0, R0, C5, C0, 3   @ Set MPU Region Instruction Privs
 
-MOV R0, #0x85               @ Access Flags (0b1 = Active) - Bits(7, 2, 0)
+MOV R0, #0x84               @ Access Flags (0b1 = Active) - Bits(7, 2)
 MCR P15, 0, R0, C2, C0, 0   @ Set MPU Regions as Data Cacheable
 MCR P15, 0, R0, C2, C0, 1   @ Set MPU Regions as Instruction Cacheable
 MCR P15, 0, R0, C3, C0, 0   @ Set MPU Regions as Write Bufferable
 
 MOV R0, #0                  @ Clear R0
-MCR P15, 0, R0, C7, C5, 0   @ Invalidate iCache
-MCR P15, 0, R0, C7, C6, 0   @ Invalidate dCache
+MCR P15, 0, R0, C7, C5, 0   @ Flush iCache
+MCR P15, 0, R0, C7, C6, 0   @ Flush dCache
 MCR P15, 0, R0, C7, C10, 4  @ Drain Write Buffer
 
 MRC P15, 0, R0, C1, C0, 0   @ Read the Control Register

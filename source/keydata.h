@@ -3,6 +3,6 @@
 
 #include "types.h"
 
-int keydata_init(u8 keyslot, u8 sector_key, u32* FIRM);
+int keydata_init(u8 keyslot, u8 sector_key);
 
 #endif

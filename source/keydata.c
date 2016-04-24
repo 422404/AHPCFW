@@ -1,4 +1,5 @@
 #include "aes.h"
+#include "firm.h"
 #include "types.h"
 
 u8 keyX[0x10] = { /*Insert 0x25 keyx here*/ };
@@ -11,9 +12,9 @@ u8 keyY1[0x10] = { 0xB9, 0xC0, 0xE0, 0x45, 0xEC, 0x96, 0x88, 0x2B, 0xD0, 0xA4, 0
 
 u8 outbuf[0x10];
 
-int keydata_init(u8 keyslot, u8 sector_key, u32* FIRM){
-	u32* arm9bin = FIRM != NULL ? (void*)FIRM + FIRM[0xA0/4] : (void*)0x8006800;
-	u32 arm9size = FIRM != NULL ? FIRM[0xA8/4] : 0x90000;
+int keydata_init(u8 keyslot, u8 sector_key){
+	u32* arm9bin = (void*)FIRM + FIRM[0xA0/4];
+	u32 arm9size = FIRM[0xA8/4];
 	
 	switch (keyslot){
 		case 0x05:
@@ -63,7 +64,6 @@ int keydata_init(u8 keyslot, u8 sector_key, u32* FIRM){
 						set_keyX(ii, outbuf);
 						keybuf[0xF]++;
 					}
-					keybuf[0xF] -= 6;
 					return 0;
 				}
 			}

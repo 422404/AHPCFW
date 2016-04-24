@@ -38,22 +38,7 @@ u32 emunand_code[] = { //Credit to Normmatt
 	0x00000000 /* ncsd_loc */ 
 };
 
-u32 thread_code[] = { 
-	0xE3A0003F /* MOV R0, #0x3F */, 
-	0xE59F101C /* LDR R1, =entry */, 
-	0xE3A02000 /* MOV R2, #0 */, 
-	0xE59F3018 /* LDR R3, =stack_top */, 
-	0xE3A04001 /* MOV R4, #1 */, 
-	0xEF000008 /* SVC 8 */, 
-	0xE59F0000 /* LDR R0, =stored_r0 */, 
-	0xE59FF000 /* LDR PC, =return_address */, 
-	0x00000000 /* stored_r0 */, 
-	0x00000000 /* return_address */, 
-	0x01FF8034 /* entry */, 
-	0x08000C00 /* stack_top */ 
-};
-
-int firm_setup(u32* FIRM){
+int firm_setup(void){
 	if (strncmp((char *)FIRM, "FIRM", 4) != 0) return -1; //if not firm
 	
 	u8* arm9bin = (void*)FIRM + FIRM[0xA0/4];
@@ -61,8 +46,8 @@ int firm_setup(u32* FIRM){
 	if (arm9bin[0] != 0xA7 || arm9bin[1] != 0x38) return 0; //if o3ds firm
 	
 	if (arm9bin[0x800] != 0x70 || arm9bin[0x801] != 0x47){ //if encrypted
-		if (arm9bin[0x50] != 0xFF && arm9bin[0x61] != 0xA9) keydata_init(0x11, 1, NULL); //if 9.6^ firm
-		else keydata_init(0x11, 0, NULL);
+		if (arm9bin[0x50] != 0xFF && arm9bin[0x61] != 0xA9) keydata_init(0x11, 1); //if 9.6^ firm
+		else keydata_init(0x11, 0);
 		
 		u8 keyslot = arm9bin[0x50] != 0xFF ? 0x16 : 0x15; //keyslot changed on 9.5
 		u8* keyX = arm9bin + (arm9bin[0x50] != 0xFF ? 0x60 : 0);
@@ -76,11 +61,7 @@ int firm_setup(u32* FIRM){
 		set_keyslot(keyslot);
 		aes(arm9bin+0x800, arm9bin+0x800, arm9bin+0x20, atoi((const char *)(arm9bin+0x30))/0x10, AES_CTR_DECRYPT);
 	}
-	keydata_init(0x1B, 0, FIRM);
-	
-	memcpy((void*)FIRM[0x44/4], (void*)FIRM + FIRM[0x40/4], FIRM[0x48/4]);
-	memcpy((void*)FIRM[0x74/4], (void*)FIRM + FIRM[0x70/4], FIRM[0x78/4]);
-	memcpy((void*)FIRM[0xA4/4], (void*)FIRM + FIRM[0xA0/4], FIRM[0xA8/4]);
+	keydata_init(0x1B, 0);
 	
 	return 0;
 }
@@ -105,9 +86,9 @@ int REDNAND(void){
 	return -1;
 }
 
-void patch(u32* FIRM){
+void patch(void){
 	/* ARM11 PATCHES */
-	vu32* arm11bin = (void*)FIRM[0x74/4];
+	u32* arm11bin = (void*)FIRM + FIRM[0x70/4];
 	u32 arm11size = FIRM[0x78/4];
 	
 	/* SVC Access Check */
@@ -119,30 +100,8 @@ void patch(u32* FIRM){
 		}
 	}
 	
-	/* Custom ARM11 Process (WIP) */ //https://gist.github.com/TiniVi/3d686676933d9b8f8bfe
-	FIL cxi;
-	u32 * cbr = 0;
-	u32 process_size = FIRM[0x48/4];
-	if (f_open(&cxi, "arm11.cxi", FA_READ | FA_OPEN_EXISTING) == FR_OK){
-		f_read(&cxi, (void*)(FIRM[0x44/4] + process_size), f_size(&cxi), cbr);
-		
-		for (u32 i = 0; i < (arm11size/4); i++){
-			if (arm11bin[i] == 0xE3570005){
-				arm11bin[i] = 0xE3570006;
-			}
-			if (arm11bin[i] == 0xDFF00000 + process_size - 4){
-				arm11bin[i] += f_size(&cxi);
-			}
-			if (arm11bin[i] == process_size){
-				arm11bin[i] += f_size(&cxi);
-				break;
-			}
-		}
-		f_close(&cxi);
-	}
-	
 	/* ARM9 PATCHES */
-	vu32* arm9bin = (void*)FIRM[0xA4/4];
+	u32* arm9bin = (void*)FIRM + FIRM[0xA0/4];
 	u32 arm9size = FIRM[0xA8/4];
 	
 	/* FIRM Partition Update (Credit to Delebile) */
@@ -185,6 +144,12 @@ void patch(u32* FIRM){
 		}
 	}
 	
+	/* ITCM Cleanup */
+	memset((void*)0x01FF8000, 0, 0x3700);
+	memset((void*)0x01FFCDE4, 0, 0x21C);
+	memset((void*)0x01FFF470, 0, 0xB90);
+	
+	/* Red/EmuNAND */
 	if (!(HIDKeyStatus() & KEY_L) && (REDNAND() == 0)){
 		for (u32 i = 0; i < (arm9size/4); i++){
 			/* SDMC Struct */
@@ -205,44 +170,26 @@ void patch(u32* FIRM){
 		}
 	}
 	
-	FIL thread;
-	u32 * tbr = 0;
-	if (f_open(&thread, "thread.bin", FA_READ | FA_OPEN_EXISTING) == FR_OK){
-		if (f_size(&thread) <= 0x36CC){ //Max thread size
-			for (u32 i = 0; i < arm9size/4; i++){
-				if (arm9bin[i] == 0xE59F002C && arm9bin[i+1] == 0xE59F102C){
-					thread_code[8] = arm9bin[i+13]; //Set R0
-					thread_code[9] = (u32)arm9bin + (i*4) + 4; //Set Return Address
-					
-					memcpy((void*)0x01FF8004, thread_code, sizeof(thread_code));
-					f_read(&thread, (void*)0x01FF8034, f_size(&thread), tbr);
-					
-					arm9bin[i] = 0xE59FF02C;
-					arm9bin[i+13] = 0x01FF8004;
-					break;
-				}
-			}
-		}
-		f_close(&thread);
-	}
-	
 	/* Debugging 
 	FIL itcm;
-	u32 * itcm_br = 0;
+	u32 itcm_br = 0;
 	f_open(&itcm, "itcm.bin", FA_WRITE | FA_CREATE_ALWAYS);
-	f_write(&itcm, (void*)0x01FF8000, 0x8000, itcm_br);
+	f_write(&itcm, (void*)0x01FF8000, 0x8000, &itcm_br);
 	f_close(&itcm);
 	
 	FIL arm9;
-	u32 * arm9_br = 0;
+	u32 arm9_br = 0;
 	f_open(&arm9, "arm9.bin", FA_WRITE | FA_CREATE_ALWAYS);
-	f_write(&arm9, arm9bin, arm9size, arm9_br);
+	f_write(&arm9, (void*)arm9bin, arm9size, &arm9_br);
 	f_close(&arm9);*/
 }
 
-void firmlaunch(u32* FIRM){
-	if (firm_setup(FIRM) == 0){
-		patch(FIRM);
+void firmlaunch(void){
+	if (firm_setup() == 0){
+		patch();
+		memcpy((void*)FIRM[0x44/4], (void*)FIRM + FIRM[0x40/4], FIRM[0x48/4]);
+		memcpy((void*)FIRM[0x74/4], (void*)FIRM + FIRM[0x70/4], FIRM[0x78/4]);
+		memcpy((void*)FIRM[0xA4/4], (void*)FIRM + FIRM[0xA0/4], FIRM[0xA8/4]);
 		ARM11(screen_deinit);
 		ARM11Entry = FIRM[0x8/4];
 		((void (*)())0x0801B01C)(); //We don't need the ARM9Loader since we're preforming it's tasks

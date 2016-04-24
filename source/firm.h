@@ -3,6 +3,8 @@
 
 #include "types.h"
 
-void firmlaunch(u32* FIRM);
+#define FIRM ((u32*)0x24000000)
+
+void firmlaunch(void);
 
 #endif
