@@ -12,13 +12,11 @@ At the current point in time, this is what it patches:
 
 -FIRM Header Address
 
-There is also support for Red/EmuNAND.
+There is also support for:
 
-WIP Patches:
+-Red/EmuNAND.
 
--ARM11 Co-Process (might get scrapped)
-
--ARM9 Thread (might get scrapped)
+-An ARM9 Thread ('thread.bin' can be loaded into memory @ 0x01FF8100 if it exists)
 
 #Credits:
 Laramie14 - Right hand man.

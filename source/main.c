@@ -16,7 +16,7 @@ void MCU_Reboot(void){
 	while(1);
 }
 
-void main_loop(void){ //This is currently just here in case an accidental launch or something, I use it to verify the code launched
+void main_loop(void){ //This is currently just here in case of accidental launch or something, I use it to verify the code launched
 	screen_init(); //Now some menu or something should go here, idk
 	
 	update_top_screen();
@@ -30,12 +30,13 @@ void main_loop(void){ //This is currently just here in case an accidental launch
 }
 
 void _start(void){
-	//keydata_init(0x25, 0); //I need a good way to gen this keyx
+	keydata_init(0x25, 0);
 	*((vu32 *)0x10000020) = 0x340; //Undocumented CONFIG Register, Allows SD/MMC Access
 	
 	FATFS sdmc;
 	f_mount(&sdmc, "0:", 0);
 	
+	ARM11Start();
 	if (HIDKeyStatus() & KEY_R){
 		clear_framebuffers();
 		

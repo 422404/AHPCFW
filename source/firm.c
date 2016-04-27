@@ -10,6 +10,20 @@
 #include <string.h>
 #include <stdlib.h>
 
+u32 mpu_flags[] = { 
+	0x00360003, 
+	0x10100000, 
+	0x01000001, 
+	0x00360003, 
+	0x20000035, 
+	0x01010101, 
+	0x00200603, 
+	0x08000000, 
+	0x01010101, 
+	0x001C0603, 
+	0x08020000 
+};
+
 u32 emunand_code[] = { //Credit to Normmatt
 	0xE1A04000 /* MOV R4, R0 */, 
 	0xE1A05001 /* MOV R5, R1 */, 
@@ -36,6 +50,23 @@ u32 emunand_code[] = { //Credit to Normmatt
 	0x00000000 /* sdmc_struct */, 
 	0x00000000 /* nand_loc */, 
 	0x00000000 /* ncsd_loc */ 
+};
+
+u32 thread_code[] = { 
+	0xE92D5FFF /* PUSH {R0-R12, LR} */,
+	0xE3A0003F /* MOV R0, #0x3F */, 
+	0xE59F101C /* LDR R1, =entry */, 
+	0xE3A02000 /* MOV R2, #0 */, 
+	0xE59F3018 /* LDR R3, =stack_top */, 
+	0xE3E04001 /* MOV R4, #-2 */, 
+	0xEF000008 /* SVC 8 */, 
+	0xE8BD5FFF /* POP {R0-R12, LR} */,
+	0xE59F000C /* LDR R0, =stored_r0 */, 
+	0xE59E1030 /* LDR R1, [LR, #0x30] */, 
+	0xE12FFF1E /* BX LR */,
+	0x01FF8100 /* entry */, 
+	0x08000C00 /* stack_top */, 
+	0x00000000 /* stored_r0 */
 };
 
 int firm_setup(void){
@@ -124,9 +155,7 @@ void patch(void){
 	for (u32 i = 0; i < (arm9size/4); i++){
 		/* MPU Flags */
 		if (arm9bin[i] == 0x00240003){
-			arm9bin[i] = 0x00360003;
-			arm9bin[i+6] = 0x00200603;
-			arm9bin[i+9] = 0x001C0603;
+			memcpy((void*)arm9bin + (i*4), mpu_flags, sizeof(mpu_flags));
 		}
 		
 		/* Signature Checks */
@@ -155,19 +184,39 @@ void patch(void){
 			/* SDMC Struct */
 			if (arm9bin[i] == 0x30201820){
 				emunand_code[21] = arm9bin[i+2] + arm9bin[i+3];
-				memcpy((void*)0x01FFF470, emunand_code, sizeof(emunand_code));
+				memcpy((void*)0x01FFCE00, emunand_code, sizeof(emunand_code));
 			}
 			
 			/* Branch to ITCM */
 			if (arm9bin[i] == 0x000D0004 && arm9bin[i+1] == 0x001E0017 && arm9bin[i+0x10] == 0x000D0004){
-				arm9bin[i] = 0x47A04C00; //LDR R4, =0x01FFF470; BLX R4
-				arm9bin[i+1] = 0x01FFF470;
+				arm9bin[i] = 0x47A04C00; //LDR R4, =0x01FFCE00; BLX R4
+				arm9bin[i+1] = 0x01FFCE00;
 				
 				arm9bin[i+0x10] = 0x47A04C00;
-				arm9bin[i+0x11] = 0x01FFF470;
+				arm9bin[i+0x11] = 0x01FFCE00;
 				break;
 			}
 		}
+	}
+	
+	FIL thread;
+	u32 * tbr = 0;
+	if (f_open(&thread, "thread.bin", FA_READ | FA_OPEN_EXISTING) == FR_OK){
+		if (f_size(&thread) <= 0x3600){ //Max thread size
+			for (u32 i = 0; i < arm9size/4; i++){
+				if (arm9bin[i] == 0xE59F002C && arm9bin[i+1] == 0xE59F102C){
+					thread_code[13] = arm9bin[i+13]; //Set R0
+					
+					memcpy((void*)0x01FFCE80, thread_code, sizeof(thread_code));
+					f_read(&thread, (void*)0x01FF8100, f_size(&thread), tbr);
+					
+					arm9bin[i+1] = 0xE12FFF30; //BLX R0
+					arm9bin[i+13] = 0x01FFCE80;
+					break;
+				}
+			}
+		}
+		f_close(&thread);
 	}
 	
 	/* Debugging 
