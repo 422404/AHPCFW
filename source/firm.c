@@ -10,6 +10,26 @@
 #include <string.h>
 #include <stdlib.h>
 
+/* TODO:
+	-Finish ARM11 Thread
+	-Move Patches to another file
+*/
+
+u32 arm11_thread[] = { 
+	0xE12FFF31 /* BLX R1 */, 
+	0xE92D5FFF /* PUSH {R0-R12, LR} */, 
+	0xE3A0003F /* MOV R0, #0x3F */, 
+	0xE59F1014 /* LDR R1, =entry */, 
+	0xE3A02000 /* MOV R2, #0 */, 
+	0xE59F3010 /* LDR R3, =stack_top */, 
+	0xE3E04001 /* MOV R4, #-2 */, 
+	0xEF000008 /* SVC 8 */, 
+	0xE8BD5FFF /* POP {R0-R12, LR} */, 
+	0xE12FFF1E /* BX LR */,
+	0x00000000 /* entry */, 
+	0x00000000 /* stack_top */, 
+};
+
 u32 mpu_flags[] = { 
 	0x00360003, 
 	0x10100000, 
@@ -52,7 +72,7 @@ u32 emunand_code[] = { //Credit to Normmatt
 	0x00000000 /* ncsd_loc */ 
 };
 
-u32 thread_code[] = { 
+u32 arm9_thread[] = { 
 	0xE92D5FFF /* PUSH {R0-R12, LR} */,
 	0xE3A0003F /* MOV R0, #0x3F */, 
 	0xE59F101C /* LDR R1, =entry */, 
@@ -64,7 +84,7 @@ u32 thread_code[] = {
 	0xE59F000C /* LDR R0, =stored_r0 */, 
 	0xE59E1030 /* LDR R1, [LR, #0x30] */, 
 	0xE12FFF1E /* BX LR */,
-	0x01FF8100 /* entry */, 
+	0x01FF8000 /* entry */, 
 	0x08000C00 /* stack_top */, 
 	0x00000000 /* stored_r0 */
 };
@@ -125,8 +145,21 @@ void patch(void){
 	/* SVC Access Check */
 	for (u32 i = 0; i < (arm11size/4); i++){
 		if (arm11bin[i] == 0x0AFFFFEA){
-			arm11bin[i] = 0xE320F000;
-			arm11bin[i+2] = 0xE320F000;
+			arm11bin[i] = 0xE320F000; //NOP
+			arm11bin[i+2] = 0xE320F000; //NOP
+			break;
+		}
+	}
+	
+	/* ARM11 Thread (WIP) */
+	for (u32 i = 0; i < (arm11size/4); i++){
+		if (arm11bin[i] == 0xE59F1028 && arm11bin[i+2] == 0xE59F0000){
+			//memcpy((void*)thread_addr, arm11_thread, sizeof(arm11_thread));
+			//memcpy((void*)func_addr, func, sizeof(func));
+			
+			arm11bin[i+3] = 0xE12FFF1E; //BX LR //0xE12FFF10; //BX R0
+			//arm11bin[i+4] = thread_addr; //R0
+			//arm11bin[i+12] = func_addr; //R1
 			break;
 		}
 	}
@@ -199,16 +232,17 @@ void patch(void){
 		}
 	}
 	
+	/* ARM9 Thread */
 	FIL thread;
-	u32 * tbr = 0;
+	u32 tbr = 0;
 	if (f_open(&thread, "thread.bin", FA_READ | FA_OPEN_EXISTING) == FR_OK){
-		if (f_size(&thread) <= 0x3600){ //Max thread size
-			for (u32 i = 0; i < arm9size/4; i++){
+		if (f_size(&thread) <= 0x3700){ //Max thread size
+			for (u32 i = 0; i < (arm9size/4); i++){
 				if (arm9bin[i] == 0xE59F002C && arm9bin[i+1] == 0xE59F102C){
-					thread_code[13] = arm9bin[i+13]; //Set R0
+					arm9_thread[13] = arm9bin[i+13]; //Set R0
 					
-					memcpy((void*)0x01FFCE80, thread_code, sizeof(thread_code));
-					f_read(&thread, (void*)0x01FF8100, f_size(&thread), tbr);
+					memcpy((void*)0x01FFCE80, arm9_thread, sizeof(arm9_thread));
+					f_read(&thread, (void*)0x01FF8000, f_size(&thread), &tbr);
 					
 					arm9bin[i+1] = 0xE12FFF30; //BLX R0
 					arm9bin[i+13] = 0x01FFCE80;
@@ -230,7 +264,13 @@ void patch(void){
 	u32 arm9_br = 0;
 	f_open(&arm9, "arm9.bin", FA_WRITE | FA_CREATE_ALWAYS);
 	f_write(&arm9, (void*)arm9bin, arm9size, &arm9_br);
-	f_close(&arm9);*/
+	f_close(&arm9);
+	
+	FIL arm11;
+	u32 arm11_br = 0;
+	f_open(&arm11, "arm11.bin", FA_WRITE | FA_CREATE_ALWAYS);
+	f_write(&arm11, (void*)arm11bin, arm11size, &arm11_br);
+	f_close(&arm11);*/
 }
 
 void firmlaunch(void){

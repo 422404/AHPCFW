@@ -45,6 +45,7 @@ MCR P15, 0, R0, C7, C6, 0   @ Flush dCache
 MCR P15, 0, R0, C7, C10, 4  @ Drain Write Buffer
 
 MRC P15, 0, R0, C1, C0, 0   @ Read the Control Register
+ORR R0, #0x40000            @ Enable ITCM
 ORR R0, #0x1000             @ Enable iCache
 ORR R0, #4                  @ Enable dCache
 ORR R0, #1                  @ Enable MPU
