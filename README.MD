@@ -16,7 +16,7 @@ There is also support for:
 
 -Red/EmuNAND.
 
--An ARM9 Thread ('thread.bin' can be loaded into memory @ 0x01FF8000 if it exists)
+-An ARM9 Thread ('thread.bin' can be loaded into memory @ 0x00A08000 with a max size of 0xFF00)
 
 WIP:
 

@@ -30,18 +30,15 @@ u32 arm11_thread[] = {
 	0x00000000 /* stack_top */, 
 };
 
-u32 mpu_flags[] = { 
-	0x00360003, 
-	0x10100000, 
-	0x01000001, 
-	0x00360003, 
-	0x20000035, 
-	0x01010101, 
-	0x00200603, 
-	0x08000000, 
-	0x01010101, 
-	0x001C0603, 
-	0x08020000 
+u32 mpu_table[] = { 
+	0x01010101, 0x001C0505, 0xFFFF0000 /* Unprotected Bootrom */, 
+	0x00000001, 0x001C0603, 0x01FF8000 /* DTCM */, 
+	0x01010101, 0x00280603, 0x08000000 /* ARM9 Memory */, 
+	0x00000001, 0x00370003, 0x10000000 /* ARM9 IO */, 
+	0x00000001, 0x00240003, 0x10100000 /* Shared IO */, 
+	0x01000001, 0x00360303, 0x20000000 /* FCRAM */, 
+	0x00000001, 0x001C0603, 0x00A08000 /* ITCM */, 
+	0x01010101, 0x001C0603, 0x08020000 /* ARM9 Memory */ 
 };
 
 u32 emunand_code[] = { //Credit to Normmatt
@@ -84,7 +81,7 @@ u32 arm9_thread[] = {
 	0xE59F000C /* LDR R0, =stored_r0 */, 
 	0xE59E1030 /* LDR R1, [LR, #0x30] */, 
 	0xE12FFF1E /* BX LR */,
-	0x01FF8000 /* entry */, 
+	0x00A08000 /* entry */, 
 	0x08000C00 /* stack_top */, 
 	0x00000000 /* stored_r0 */
 };
@@ -137,30 +134,51 @@ int REDNAND(void){
 	return -1;
 }
 
-void patch(void){
+void patch_setup(void){
+	/* Map ITCM and DTCM */
+	__asm__ volatile (
+		"PUSH {R0}\n"
+		"MRC P15, 0, R0, C1, C0, 0\n" //Disable ITCM and DTCM
+		"BIC R0, #0x50000\n"
+		"MCR P15, 0, R0, C1, C0, 0\n"
+		
+		"MOV R0, #0x0000001E\n" //Map ITCM
+		"MCR P15, 0, R0, C9, C1, 1\n"
+		
+		"LDR R0, =0x01FF800C\n" //Map DTCM
+		"MCR P15, 0, R0, C9, C1, 0\n"
+		
+		"MRC P15, 0, R0, C1, C0, 0\n" //Enable ITCM and DTCM
+		"ORR R0, #0x50000\n"
+		"MCR P15, 0, R0, C1, C0, 0\n"
+		"POP {R0}"
+	);
+	
+	/* Copy ITCM data to DTCM */
+	memcpy((void*)0x01FFB700, (void*)0x00A0B700, 0x900);
+	memcpy((void*)0x01FFC000, (void*)0x00A0C000, 0xDE4);
+	memcpy((void*)0x01FFD000, (void*)0x00A0D000, 0x2470);
+	
+	/* Clear out ITCM */
+	memset((void*)0x00A08000, 0, 0x8000);
+	
 	/* ARM11 PATCHES */
 	u32* arm11bin = (void*)FIRM + FIRM[0x70/4];
 	u32 arm11size = FIRM[0x78/4];
 	
-	/* SVC Access Check */
 	for (u32 i = 0; i < (arm11size/4); i++){
+		/* SVC Access Check */
 		if (arm11bin[i] == 0x0AFFFFEA){
 			arm11bin[i] = 0xE320F000; //NOP
 			arm11bin[i+2] = 0xE320F000; //NOP
-			break;
 		}
-	}
-	
-	/* ARM11 Thread (WIP) */
-	for (u32 i = 0; i < (arm11size/4); i++){
+		
+		/* ARM11 Thread (WIP) */
 		if (arm11bin[i] == 0xE59F1028 && arm11bin[i+2] == 0xE59F0000){
 			//memcpy((void*)thread_addr, arm11_thread, sizeof(arm11_thread));
-			//memcpy((void*)func_addr, func, sizeof(func));
 			
-			arm11bin[i+3] = 0xE12FFF1E; //BX LR //0xE12FFF10; //BX R0
-			//arm11bin[i+4] = thread_addr; //R0
-			//arm11bin[i+12] = func_addr; //R1
-			break;
+			//arm11bin[i+2] = 0xE12FFF11; //BX R1
+			//arm11bin[i+12] = thread_addr; //R1
 		}
 	}
 	
@@ -186,30 +204,29 @@ void patch(void){
 	}
 	
 	for (u32 i = 0; i < (arm9size/4); i++){
-		/* MPU Flags */
-		if (arm9bin[i] == 0x00240003){
-			memcpy((void*)arm9bin + (i*4), mpu_flags, sizeof(mpu_flags));
+		/* MPU Permissions */
+		if (arm9bin[i] == 0xE1833618 && arm9bin[i+1] == 0xE1822007){
+			arm9bin[i-2] = 0xE59F2004; //LDR R2, [PC, #4]
+			arm9bin[i-1] = 0xE59F3000; //LDR R3, [PC]
+			arm9bin[i] = 0xEA000000; //B PC (basically)
+			arm9bin[i+1] = 0x33333333; //Give R/W access to all MPU regions
 		}
+		if (arm9bin[i] == 0xEE052F50 && arm9bin[i+0x28] != 0x01010101){ //Don't update memory R/W permissions!
+			arm9bin[i] = 0xE320F000; //NOP
+			arm9bin[i+1] = 0xE320F000; //NOP
+		}
+		
+		/* MPU Regions */
+		if (arm9bin[i] == 0x01010101 && arm9bin[i+1] == 0x001C0505)
+			memcpy((void*)arm9bin + (i*4), mpu_table, sizeof(mpu_table));
 		
 		/* Signature Checks */
-		if (arm9bin[i] == 0x4D22B570 && arm9bin[i+1] == 0x6869000C){
-			arm9bin[i] = 0x47702000;
-		}
-		if (arm9bin[i] == 0xE7761CC0){
-			arm9bin[i] = 0xE7762000;
-		}
+		if (arm9bin[i] == 0x4D22B570 && arm9bin[i+1] == 0x6869000C) arm9bin[i] = 0x47702000;
+		if (arm9bin[i] == 0xE7761CC0) arm9bin[i] = 0xE7762000;
 		
 		/* FIRM Header Address */
-		if (arm9bin[i] == 0x01FFFC00){
-			arm9bin[i] = 0x24000000;
-			break;
-		}
+		if (arm9bin[i] == 0x01FFFC00) arm9bin[i] = 0x24000000;
 	}
-	
-	/* ITCM Cleanup */
-	memset((void*)0x01FF8000, 0, 0x3700);
-	memset((void*)0x01FFCDE4, 0, 0x21C);
-	memset((void*)0x01FFF470, 0, 0xB90);
 	
 	/* Red/EmuNAND */
 	if (!(HIDKeyStatus() & KEY_L) && (REDNAND() == 0)){
@@ -217,16 +234,16 @@ void patch(void){
 			/* SDMC Struct */
 			if (arm9bin[i] == 0x30201820){
 				emunand_code[21] = arm9bin[i+2] + arm9bin[i+3];
-				memcpy((void*)0x01FFCE00, emunand_code, sizeof(emunand_code));
+				memcpy((void*)0x00A0FFA0, emunand_code, 0x60);
 			}
 			
 			/* Branch to ITCM */
 			if (arm9bin[i] == 0x000D0004 && arm9bin[i+1] == 0x001E0017 && arm9bin[i+0x10] == 0x000D0004){
 				arm9bin[i] = 0x47A04C00; //LDR R4, =0x01FFCE00; BLX R4
-				arm9bin[i+1] = 0x01FFCE00;
+				arm9bin[i+1] = 0x00A0FFA0;
 				
 				arm9bin[i+0x10] = 0x47A04C00;
-				arm9bin[i+0x11] = 0x01FFCE00;
+				arm9bin[i+0x11] = 0x00A0FFA0;
 				break;
 			}
 		}
@@ -236,16 +253,16 @@ void patch(void){
 	FIL thread;
 	u32 tbr = 0;
 	if (f_open(&thread, "thread.bin", FA_READ | FA_OPEN_EXISTING) == FR_OK){
-		if (f_size(&thread) <= 0x3700){ //Max thread size
+		if (f_size(&thread) <= 0xFF00){ //Max thread size
 			for (u32 i = 0; i < (arm9size/4); i++){
 				if (arm9bin[i] == 0xE59F002C && arm9bin[i+1] == 0xE59F102C){
 					arm9_thread[13] = arm9bin[i+13]; //Set R0
 					
-					memcpy((void*)0x01FFCE80, arm9_thread, sizeof(arm9_thread));
-					f_read(&thread, (void*)0x01FF8000, f_size(&thread), &tbr);
+					memcpy((void*)0x00A0FF60, arm9_thread, 0x38);
+					f_read(&thread, (void*)0x00A08000, f_size(&thread), &tbr);
 					
 					arm9bin[i+1] = 0xE12FFF30; //BLX R0
-					arm9bin[i+13] = 0x01FFCE80;
+					arm9bin[i+13] = 0x00A0FF60;
 					break;
 				}
 			}
@@ -254,10 +271,16 @@ void patch(void){
 	}
 	
 	/* Debugging 
+	FIL dtcm;
+	u32 dtcm_br = 0;
+	f_open(&dtcm, "dtcm.bin", FA_WRITE | FA_CREATE_ALWAYS);
+	f_write(&dtcm, (void*)0x01FF8000, 0x8000, &dtcm_br);
+	f_close(&dtcm);
+	
 	FIL itcm;
 	u32 itcm_br = 0;
 	f_open(&itcm, "itcm.bin", FA_WRITE | FA_CREATE_ALWAYS);
-	f_write(&itcm, (void*)0x01FF8000, 0x8000, &itcm_br);
+	f_write(&itcm, (void*)0x00A08000, 0x8000, &itcm_br);
 	f_close(&itcm);
 	
 	FIL arm9;
@@ -275,7 +298,7 @@ void patch(void){
 
 void firmlaunch(void){
 	if (firm_setup() == 0){
-		patch();
+		patch_setup();
 		memcpy((void*)FIRM[0x44/4], (void*)FIRM + FIRM[0x40/4], FIRM[0x48/4]);
 		memcpy((void*)FIRM[0x74/4], (void*)FIRM + FIRM[0x70/4], FIRM[0x78/4]);
 		memcpy((void*)FIRM[0xA4/4], (void*)FIRM + FIRM[0xA0/4], FIRM[0xA8/4]);

@@ -13,6 +13,10 @@ BIC R0, #4                  @ Disable dCache
 BIC R0, #1                  @ Disable MPU
 MCR P15, 0, R0, C1, C0, 0   @ Set the Control Register
 
+LDR R0, =0x33333333         @ R/W Flags (0b011 = R/W for Kern/User)
+MCR P15, 0, R0, C5, C0, 2   @ Set MPU Region Data Privs
+MCR P15, 0, R0, C5, C0, 3   @ Set MPU Region Instruction Privs
+
 LDR R0, =0xFFFF001D         @ Unprotected Bootrom | 32KB
 MCR P15, 0, R0, C6, C0, 0   @ Set MPU Region 0
 LDR R0, =0x00000035         @ ITCM | 128MB
@@ -29,10 +33,6 @@ LDR R0, =0x1FF80025         @ AXIWRAM | 512KB
 MCR P15, 0, R0, C6, C6, 0   @ Set MPU Region 6
 LDR R0, =0x20000037         @ FCRAM | 256MB
 MCR P15, 0, R0, C6, C7, 0   @ Set MPU Region 7
-
-LDR R0, =0x33333333         @ R/W Flags (0b011 = R/W for Kern/User)
-MCR P15, 0, R0, C5, C0, 2   @ Set MPU Region Data Privs
-MCR P15, 0, R0, C5, C0, 3   @ Set MPU Region Instruction Privs
 
 MOV R0, #0x84               @ Access Flags (0b1 = Active) - Bits(7, 2)
 MCR P15, 0, R0, C2, C0, 0   @ Set MPU Regions as Data Cacheable
