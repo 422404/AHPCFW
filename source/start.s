@@ -19,13 +19,13 @@ MCR P15, 0, R0, C5, C0, 3   @ Set MPU Region Instruction Privs
 
 LDR R0, =0xFFFF001D         @ Unprotected Bootrom | 32KB
 MCR P15, 0, R0, C6, C0, 0   @ Set MPU Region 0
-LDR R0, =0x00000035         @ ITCM | 128MB
+LDR R0, =0x00000035         @ ITCM/DTCM | 128MB
 MCR P15, 0, R0, C6, C1, 0   @ Set MPU Region 1
 LDR R0, =0x08000029         @ ARM9 Memory | 2MB
 MCR P15, 0, R0, C6, C2, 0   @ Set MPU Region 2
 LDR R0, =0x10000035         @ IO Registers | 128MB
 MCR P15, 0, R0, C6, C3, 0   @ Set MPU Region 3
-LDR R0, =0x18000035         @ Video RAM | 128MB
+LDR R0, =0x1800002D         @ Video RAM | 8MB
 MCR P15, 0, R0, C6, C4, 0   @ Set MPU Region 4
 LDR R0, =0x1FF00025         @ DSP Memory | 512KB
 MCR P15, 0, R0, C6, C5, 0   @ Set MPU Region 5

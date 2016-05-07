@@ -41,9 +41,9 @@ void _start(void){
 		clear_framebuffers();
 		
 		FIL img; //I got bored of nothing being on the screen during the main loop :p
-		u32 ibr = 0;
+		u32 img_br = 0;
 		if (f_open(&img, "image.bin", FA_READ | FA_OPEN_EXISTING) == FR_OK){
-			f_read(&img, TopDrawBuffer, 0x46500, &ibr);
+			f_read(&img, TopDrawBuffer, 0x46500, &img_br);
 			f_close(&img);
 			
 			memcpy(BotDrawBuffer, TopDrawBuffer + 0x7080, 0x38400); //copy the image to the bottom screen (centered)

@@ -4,6 +4,8 @@ There are also screen functions as well as other libs the user can play with. I 
 
 At the current point in time, this is what it patches:
 
+-FIRM MPU Setup
+
 -SVC Access Checks
 
 -FIRM Partition Writing (Credit to Delebile)
@@ -16,7 +18,7 @@ There is also support for:
 
 -Red/EmuNAND.
 
--An ARM9 Thread ('thread.bin' can be loaded into memory @ 0x00A08000 with a max size of 0xFF00)
+-An ARM9 Thread ('thread.bin' can be loaded into memory @ 0x00A08000 with a max size of 0x7F00)
 
 WIP:
 
